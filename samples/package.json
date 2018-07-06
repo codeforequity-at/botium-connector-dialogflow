@@ -1,0 +1,16 @@
+{
+  "name": "samples",
+  "version": "1.0.0",
+  "description": "",
+  "main": "botiumFluent.js",
+  "scripts": {
+    "start": "node botiumFluent.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "botium-connector-dialogflow": "../",
+    "botium-core": "^1.3.18"
+  }
+}
