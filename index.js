@@ -1,6 +1,7 @@
 const util = require('util')
 const uuidV1 = require('uuid/v1')
 const dialogflow = require('dialogflow')
+const _ = require('lodash')
 const debug = require('debug')('botium-connector-dialogflow')
 
 const structjson = require('./structjson')
@@ -33,6 +34,13 @@ class BotiumConnectorDialogflow {
     if (!this.caps[Capabilities.DIALOGFLOW_CLIENT_EMAIL]) throw new Error('DIALOGFLOW_CLIENT_EMAIL capability required')
     if (!this.caps[Capabilities.DIALOGFLOW_PRIVATE_KEY]) throw new Error('DIALOGFLOW_PRIVATE_KEY capability required')
     if (!this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE]) this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE] = Defaults[Capabilities.DIALOGFLOW_LANGUAGE_CODE]
+
+    const contextSuffixes = this._getContextSuffixes()
+    contextSuffixes.forEach((contextSuffix) => {
+      if (!this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_NAME + contextSuffix] || !this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_LIFESPAN + contextSuffix]) {
+        throw new Error(`DIALOGFLOW_INPUT_CONTEXT_NAME${contextSuffix} and DIALOGFLOW_INPUT_CONTEXT_LIFESPAN${contextSuffix} capability required`)
+      }
+    })
     return Promise.resolve()
   }
 
@@ -55,19 +63,8 @@ class BotiumConnectorDialogflow {
     this.sessionPath = this.sessionClient.sessionPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID], this.conversationId)
     this.queryParams = null
 
-    if (!this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_NAME] || !this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_LIFESPAN]) {
-      return Promise.resolve()
-    }
-
     this.contextClient = new dialogflow.ContextsClient(this.sessionOpts)
-    const contextPath = this.contextClient.contextPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID],
-      this.conversationId, this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_NAME])
-    const context = {lifespanCount: parseInt(this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_LIFESPAN]), name: contextPath}
-    if (this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_PARAMETERS]) {
-      context.parameters = structjson.jsonToStructProto(this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_PARAMETERS])
-    }
-    const request = {parent: this.sessionPath, context: context}
-    return this.contextClient.createContext(request)
+    return Promise.all(this._getContextSuffixes().map((c) => this._createContext(c)))
   }
 
   UserSays (msg) {
@@ -85,10 +82,11 @@ class BotiumConnectorDialogflow {
         }
       }
       request.queryParams = this.queryParams
+      debug(`dialogflow request: ${JSON.stringify(request, null, 2)}`)
 
       this.sessionClient.detectIntent(request).then((responses) => {
         const response = responses[0]
-        debug(`dialogflow response: ${util.inspect(response)}`)
+        debug(`dialogflow response: ${JSON.stringify(response, null, 2)}`)
 
         response.queryResult.outputContexts.forEach(context => {
           context.parameters = structjson.jsonToStructProto(
@@ -129,6 +127,26 @@ class BotiumConnectorDialogflow {
     debug('Clean called')
     this.sessionOpts = null
     return Promise.resolve()
+  }
+
+  _createContext (contextSuffix) {
+    const contextPath = this.contextClient.contextPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID],
+      this.conversationId, this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_NAME + contextSuffix])
+    const context = {lifespanCount: parseInt(this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_LIFESPAN + contextSuffix]), name: contextPath}
+    if (this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_PARAMETERS + contextSuffix]) {
+      context.parameters = structjson.jsonToStructProto(this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_PARAMETERS + contextSuffix])
+    }
+    const request = {parent: this.sessionPath, context: context}
+    return this.contextClient.createContext(request)
+  }
+
+  _getContextSuffixes () {
+    const suffixes = []
+    const contextNameCaps = _.pickBy(this.caps, (v, k) => k.startsWith(Capabilities.DIALOGFLOW_INPUT_CONTEXT_NAME))
+    _(contextNameCaps).keys().sort().each((key) => {
+      suffixes.push(key.substring(Capabilities.DIALOGFLOW_INPUT_CONTEXT_NAME.length))
+    })
+    return suffixes
   }
 }
 
