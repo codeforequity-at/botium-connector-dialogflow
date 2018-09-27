@@ -101,12 +101,12 @@ class BotiumConnectorDialogflow {
         if (this.caps[Capabilities.DIALOGFLOW_USE_INTENT]) {
           if (response.queryResult.intent) {
             const botMsg = { sender: 'bot', sourceData: response.queryResult, messageText: response.queryResult.intent.displayName }
-            this.queueBotSays(botMsg)
+            setTimeout(() => this.queueBotSays(botMsg), 0)
           }
         } else {
           if (response.queryResult.fulfillmentText) {
             const botMsg = { sender: 'bot', sourceData: response.queryResult, messageText: response.queryResult.fulfillmentText }
-            this.queueBotSays(botMsg)
+            setTimeout(() => this.queueBotSays(botMsg), 0)
           }
         }
       }).catch((err) => {
