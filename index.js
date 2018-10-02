@@ -104,9 +104,19 @@ class BotiumConnectorDialogflow {
             setTimeout(() => this.queueBotSays(botMsg), 0)
           }
         } else {
-          if (response.queryResult.fulfillmentText) {
-            const botMsg = { sender: 'bot', sourceData: response.queryResult, messageText: response.queryResult.fulfillmentText }
+          // declaring botMsg outside of loop, required to stay in scope
+          var botMsg = ''
+          response.queryResult.fulfillmentMessages.forEach(
+            function (element) {
+              if (element.text) {
+                botMsg = { sender: 'bot', sourceData: response.queryResult, messageText: element.text.text[0] }
+                debug(`botMsg2: ${JSON.stringify(botMsg, null, 2)}`)
+              }
+            })
+          if (botMsg) {
             setTimeout(() => this.queueBotSays(botMsg), 0)
+          } else {
+            debug('Error: should not get here as there should be a response.')
           }
         }
       }).catch((err) => {
