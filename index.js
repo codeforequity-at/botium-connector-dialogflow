@@ -1,5 +1,6 @@
 const util = require('util')
 const uuidV1 = require('uuid/v1')
+const mime = require('mime-types')
 const dialogflow = require('dialogflow')
 const _ = require('lodash')
 const debug = require('debug')('botium-connector-dialogflow')
@@ -14,7 +15,8 @@ const Capabilities = {
   DIALOGFLOW_USE_INTENT: 'DIALOGFLOW_USE_INTENT',
   DIALOGFLOW_INPUT_CONTEXT_NAME: 'DIALOGFLOW_INPUT_CONTEXT_NAME',
   DIALOGFLOW_INPUT_CONTEXT_LIFESPAN: 'DIALOGFLOW_INPUT_CONTEXT_LIFESPAN',
-  DIALOGFLOW_INPUT_CONTEXT_PARAMETERS: 'DIALOGFLOW_INPUT_CONTEXT_PARAMETERS'
+  DIALOGFLOW_INPUT_CONTEXT_PARAMETERS: 'DIALOGFLOW_INPUT_CONTEXT_PARAMETERS',
+  DIALOGFLOW_OUTPUT_PLATFORM: 'DIALOGFLOW_OUTPUT_PLATFORM'
 }
 
 const Defaults = {
@@ -104,10 +106,47 @@ class BotiumConnectorDialogflow {
             setTimeout(() => this.queueBotSays(botMsg), 0)
           }
         } else {
-          if (response.queryResult.fulfillmentText) {
-            const botMsg = { sender: 'bot', sourceData: response.queryResult, messageText: response.queryResult.fulfillmentText }
-            setTimeout(() => this.queueBotSays(botMsg), 0)
-          }
+          const fulfillmentMessages = response.queryResult.fulfillmentMessages.filter(f =>
+            (this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM] && f.platform === this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM]) ||
+            (!this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM] && (f.platform === 'PLATFORM_UNSPECIFIED' || !f.platform))
+          )
+          fulfillmentMessages.forEach((fulfillmentMessage) => {
+            if (fulfillmentMessage.text) {
+              const botMsg = { sender: 'bot', sourceData: response.queryResult, messageText: fulfillmentMessage.text.text[0] }
+              setTimeout(() => this.queueBotSays(botMsg), 0)
+            } else if (fulfillmentMessage.image) {
+              const botMsg = {
+                sender: 'bot',
+                sourceData: response.queryResult,
+                media: [{
+                  mediaUri: fulfillmentMessage.image.imageUri,
+                  mimeType: mime.lookup(fulfillmentMessage.image.imageUri) || 'application/unknown'
+                }]
+              }
+              setTimeout(() => this.queueBotSays(botMsg), 0)
+            } else if (fulfillmentMessage.quickReplies) {
+              const botMsg = {
+                sender: 'bot',
+                sourceData: response.queryResult,
+                buttons: fulfillmentMessage.quickReplies.quickReplies.map((q) => ({ text: q }))
+              }
+              setTimeout(() => this.queueBotSays(botMsg), 0)
+            } else if (fulfillmentMessage.card) {
+              const botMsg = {
+                sender: 'bot',
+                sourceData: response.queryResult,
+                cards: [{
+                  text: fulfillmentMessage.card.title,
+                  image: fulfillmentMessage.card.imageUri && {
+                    mediaUri: fulfillmentMessage.card.imageUri,
+                    mimeType: mime.lookup(fulfillmentMessage.card.imageUri) || 'application/unknown'
+                  },
+                  buttons: fulfillmentMessage.card.buttons && fulfillmentMessage.card.buttons.map((q) => ({ text: q.text, payload: q.postback }))
+                }]
+              }
+              setTimeout(() => this.queueBotSays(botMsg), 0)
+            }
+          })
         }
       }).catch((err) => {
         reject(new Error(`Cannot send message to dialogflow container: ${util.inspect(err)}`))
