@@ -4,13 +4,23 @@
   "description": "",
   "main": "botiumFluent.js",
   "scripts": {
-    "start": "node botiumFluent.js"
+    "test": "mocha spec",
+    "test-with-input-context": "cross-env BOTIUM_CONFIG=botium-contexts.json mocha spec"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "botium-connector-dialogflow": "../",
-    "botium-core": "*"
+  "botium": {
+    "convodirs": [
+      "spec\\convo"
+    ],
+    "expandConvos": true,
+    "expandUtterancesToConvos": false
+  },
+  "devDependencies": {
+    "botium-bindings": "latest",
+    "botium-connector-dialogflow": "latest",
+    "cross-env": "^5.2.0",
+    "mocha": "latest"
   }
 }
