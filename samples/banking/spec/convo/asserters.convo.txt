@@ -1,0 +1,17 @@
+asserters
+
+#me
+hello
+
+#bot
+INTENT Default Welcome Intent
+INTENT_CONFIDENCE 70
+
+#me
+check my credit card balance
+
+#bot
+INTENT account.balance.check
+INTENT_CONFIDENCE 80
+ENTITIES account
+ENTITY_VALUES credit card

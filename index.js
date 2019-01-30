@@ -12,16 +12,16 @@ const Capabilities = {
   DIALOGFLOW_CLIENT_EMAIL: 'DIALOGFLOW_CLIENT_EMAIL',
   DIALOGFLOW_PRIVATE_KEY: 'DIALOGFLOW_PRIVATE_KEY',
   DIALOGFLOW_LANGUAGE_CODE: 'DIALOGFLOW_LANGUAGE_CODE',
-  DIALOGFLOW_USE_INTENT: 'DIALOGFLOW_USE_INTENT',
   DIALOGFLOW_INPUT_CONTEXT_NAME: 'DIALOGFLOW_INPUT_CONTEXT_NAME',
   DIALOGFLOW_INPUT_CONTEXT_LIFESPAN: 'DIALOGFLOW_INPUT_CONTEXT_LIFESPAN',
   DIALOGFLOW_INPUT_CONTEXT_PARAMETERS: 'DIALOGFLOW_INPUT_CONTEXT_PARAMETERS',
-  DIALOGFLOW_OUTPUT_PLATFORM: 'DIALOGFLOW_OUTPUT_PLATFORM'
+  DIALOGFLOW_OUTPUT_PLATFORM: 'DIALOGFLOW_OUTPUT_PLATFORM',
+  DIALOGFLOW_FORCE_INTENT_RESOLUTION: 'DIALOGFLOW_FORCE_INTENT_RESOLUTION'
 }
 
 const Defaults = {
   [Capabilities.DIALOGFLOW_LANGUAGE_CODE]: 'en-US',
-  [Capabilities.DIALOGFLOW_USE_INTENT]: false
+  [Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]: true
 }
 
 class BotiumConnectorDialogflow {
@@ -36,6 +36,7 @@ class BotiumConnectorDialogflow {
     if (!this.caps[Capabilities.DIALOGFLOW_CLIENT_EMAIL]) throw new Error('DIALOGFLOW_CLIENT_EMAIL capability required')
     if (!this.caps[Capabilities.DIALOGFLOW_PRIVATE_KEY]) throw new Error('DIALOGFLOW_PRIVATE_KEY capability required')
     if (!this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE]) this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE] = Defaults[Capabilities.DIALOGFLOW_LANGUAGE_CODE]
+    if (!this.caps[Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]) this.caps[Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION] = Defaults[Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]
 
     const contextSuffixes = this._getContextSuffixes()
     contextSuffixes.forEach((contextSuffix) => {
@@ -100,53 +101,54 @@ class BotiumConnectorDialogflow {
         }
         resolve(this)
 
-        if (this.caps[Capabilities.DIALOGFLOW_USE_INTENT]) {
-          if (response.queryResult.intent) {
-            const botMsg = { sender: 'bot', sourceData: response.queryResult, messageText: response.queryResult.intent.displayName }
-            setTimeout(() => this.queueBotSays(botMsg), 0)
-          }
-        } else {
-          const fulfillmentMessages = response.queryResult.fulfillmentMessages.filter(f =>
-            (this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM] && f.platform === this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM]) ||
+        let nlp = {
+          intent: {
+            name: response.queryResult.intent.displayName,
+            confidence: response.queryResult.intentDetectionConfidence
+          },
+          entities: (response.queryResult.parameters && response.queryResult.parameters.fields)
+            ? Object.keys(response.queryResult.parameters.fields).map((key) => {
+              return {name: key, value: response.queryResult.parameters.fields[key].stringValue}
+            })
+            : []
+        }
+        const fulfillmentMessages = response.queryResult.fulfillmentMessages.filter(f =>
+          (this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM] && f.platform === this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM]) ||
             (!this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM] && (f.platform === 'PLATFORM_UNSPECIFIED' || !f.platform))
-          )
-          fulfillmentMessages.forEach((fulfillmentMessage) => {
-            if (fulfillmentMessage.text) {
-              const botMsg = { sender: 'bot', sourceData: response.queryResult, messageText: fulfillmentMessage.text.text[0] }
-              setTimeout(() => this.queueBotSays(botMsg), 0)
-            } else if (fulfillmentMessage.image) {
-              const botMsg = {
-                sender: 'bot',
-                sourceData: response.queryResult,
-                media: [{
-                  mediaUri: fulfillmentMessage.image.imageUri,
-                  mimeType: mime.lookup(fulfillmentMessage.image.imageUri) || 'application/unknown'
-                }]
-              }
-              setTimeout(() => this.queueBotSays(botMsg), 0)
-            } else if (fulfillmentMessage.quickReplies) {
-              const botMsg = {
-                sender: 'bot',
-                sourceData: response.queryResult,
-                buttons: fulfillmentMessage.quickReplies.quickReplies.map((q) => ({ text: q }))
-              }
-              setTimeout(() => this.queueBotSays(botMsg), 0)
-            } else if (fulfillmentMessage.card) {
-              const botMsg = {
-                sender: 'bot',
-                sourceData: response.queryResult,
-                cards: [{
-                  text: fulfillmentMessage.card.title,
-                  image: fulfillmentMessage.card.imageUri && {
-                    mediaUri: fulfillmentMessage.card.imageUri,
-                    mimeType: mime.lookup(fulfillmentMessage.card.imageUri) || 'application/unknown'
-                  },
-                  buttons: fulfillmentMessage.card.buttons && fulfillmentMessage.card.buttons.map((q) => ({ text: q.text, payload: q.postback }))
-                }]
-              }
-              setTimeout(() => this.queueBotSays(botMsg), 0)
-            }
-          })
+        )
+        let forceIntentResolution = this.caps[Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]
+        fulfillmentMessages.forEach((fulfillmentMessage) => {
+          let acceptedResponse = true
+          const botMsg = { sender: 'bot', sourceData: response.queryResult, nlp}
+          if (fulfillmentMessage.text) {
+            botMsg.messageText = fulfillmentMessage.text.text[0]
+          } else if (fulfillmentMessage.image) {
+            botMsg.media = [{
+              mediaUri: fulfillmentMessage.image.imageUri,
+              mimeType: mime.lookup(fulfillmentMessage.image.imageUri) || 'application/unknown'
+            }]
+          } else if (fulfillmentMessage.quickReplies) {
+            botMsg.buttons = fulfillmentMessage.quickReplies.quickReplies.map((q) => ({ text: q }))
+          } else if (fulfillmentMessage.card) {
+            botMsg.cards = [{
+              text: fulfillmentMessage.card.title,
+              image: fulfillmentMessage.card.imageUri && {
+                mediaUri: fulfillmentMessage.card.imageUri,
+                mimeType: mime.lookup(fulfillmentMessage.card.imageUri) || 'application/unknown'
+              },
+              buttons: fulfillmentMessage.card.buttons && fulfillmentMessage.card.buttons.map((q) => ({ text: q.text, payload: q.postback }))
+            }]
+          } else {
+            acceptedResponse = false
+          }
+          if (acceptedResponse) {
+            setTimeout(() => this.queueBotSays(botMsg), 0)
+            forceIntentResolution = false
+          }
+        })
+
+        if (forceIntentResolution) {
+          setTimeout(() => this.queueBotSays({ sender: 'bot', sourceData: response.queryResult, nlp }), 0)
         }
       }).catch((err) => {
         reject(new Error(`Cannot send message to dialogflow container: ${util.inspect(err)}`))

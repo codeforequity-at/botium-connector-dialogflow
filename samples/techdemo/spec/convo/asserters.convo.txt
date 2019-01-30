@@ -1,7 +1,0 @@
-asserters
-
-#me
-hello
-
-#bot
-INTENT HomeAutomation.TurnOn
