@@ -1,0 +1,13 @@
+context
+
+#me
+hi
+
+#bot
+Enter "card" or "picture" or "buttons" or "adaptive" for rich message content
+
+#me
+book a room
+
+#bot
+BUTTONS Let's book a room.

@@ -1,10 +1,10 @@
 {
-  "name": "techdemo",
+  "name": "context",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "NODE_ENV=test mocha spec"
+    "test": "cross-env BOTIUM_CONFIG=./botium-contexts.json mocha spec"
   },
   "author": "",
   "license": "ISC",
@@ -19,8 +19,9 @@
     "expandUtterancesToConvos": false
   },
   "devDependencies": {
-    "mocha": "latest",
     "botium-bindings": "latest",
-    "botium-connector-dialogflow": "../../"
+    "botium-connector-dialogflow": "../../",
+    "cross-env": "^5.2.0",
+    "mocha": "latest"
   }
 }
