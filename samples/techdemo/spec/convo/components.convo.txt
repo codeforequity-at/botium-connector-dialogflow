@@ -1,0 +1,13 @@
+components
+
+#me
+hello
+
+#bot
+Enter "card" or "picture" or "buttons" or "adaptive" for rich message content
+
+#me
+card
+
+#bot
+BUTTONS Button 1|Button 2
