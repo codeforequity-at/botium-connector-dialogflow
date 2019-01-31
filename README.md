@@ -1,4 +1,4 @@
-# Botium Connector for Google Dialogflow
+﻿# Botium Connector for Google Dialogflow
 
 [![NPM](https://nodei.co/npm/botium-connector-dialogflow.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/botium-connector-dialogflow/)
 
@@ -82,7 +82,7 @@ Set the capability __CONTAINERMODE__ to __dialogflow__ to activate this connecto
 ### DIALOGFLOW_CLIENT_EMAIL
 ### DIALOGFLOW_PRIVATE_KEY
 ### DIALOGFLOW_LANGUAGE_CODE
-### DIALOGFLOW_USE_INTENT
+### DIALOGFLOW_FORCE_INTENT_RESOLUTION
 ### DIALOGFLOW_INPUT_CONTEXT_NAME(_X)
 ### DIALOGFLOW_INPUT_CONTEXT_LIFESPAN(_X)
 ### DIALOGFLOW_INPUT_CONTEXT_PARAMETERS(_X)
