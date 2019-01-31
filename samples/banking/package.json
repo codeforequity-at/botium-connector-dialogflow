@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "NODE_ENV=test mocha spec"
+    "test": "mocha spec"
   },
   "author": "",
   "license": "ISC",
