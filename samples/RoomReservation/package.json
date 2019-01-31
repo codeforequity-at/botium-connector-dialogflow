@@ -1,16 +1,15 @@
 {
-  "name": "room-reservation",
+  "name": "samples",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "botiumFluent.js",
   "scripts": {
-    "test": "cross-env BOTIUM_CONFIG=./botium-contexts.json mocha spec"
+    "test": "mocha spec",
+    "test-with-input-context": "cross-env BOTIUM_CONFIG=botium-contexts.json mocha spec"
   },
+  "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "botium-bindings": "^2.0.2"
-  },
   "botium": {
     "convodirs": [
       "spec\\convo"
@@ -20,7 +19,7 @@
   },
   "devDependencies": {
     "botium-bindings": "latest",
-    "botium-connector-dialogflow": "../../",
+    "botium-connector-dialogflow": "latest",
     "cross-env": "^5.2.0",
     "mocha": "latest"
   }

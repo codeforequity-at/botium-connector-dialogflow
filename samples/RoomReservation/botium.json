@@ -1,7 +1,7 @@
 {
   "botium": {
     "Capabilities": {
-      "PROJECTNAME": "Google Dialogflow Context Sample",
+      "PROJECTNAME": "Google Dialogflow Room Reservation Sample",
       "CONTAINERMODE": "dialogflow",
       "DIALOGFLOW_PROJECT_ID": "room-reservation-cfa4c",
       "DIALOGFLOW_CLIENT_EMAIL": "a-709-978@room-reservation-cfa4c.iam.gserviceaccount.com",
