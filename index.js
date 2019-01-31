@@ -119,7 +119,7 @@ class BotiumConnectorDialogflow {
         let forceIntentResolution = this.caps[Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]
         fulfillmentMessages.forEach((fulfillmentMessage) => {
           let acceptedResponse = true
-          const botMsg = { sender: 'bot', sourceData: response.queryResult, nlp}
+          const botMsg = { sender: 'bot', sourceData: response.queryResult, nlp }
           if (fulfillmentMessage.text) {
             botMsg.messageText = fulfillmentMessage.text.text[0]
           } else if (fulfillmentMessage.image) {
