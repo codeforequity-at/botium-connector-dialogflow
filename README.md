@@ -145,7 +145,6 @@ Optional Capability.
 
 ## Open Issues and Restrictions
 * Account Linking is not supported (Consider using [Botium Connector for Google Assistant](https://github.com/codeforequity-at/botium-connector-google-assistant) if you want to test it)
-* Request to Dialogflow API can be just text. Interactions on UI elements are not supported yet
 * Not [all](https://cloud.google.com/dialogflow-enterprise/docs/reference/rest/v2/projects.agent.intents#Message) dialogflow response is supported, just
   * Text,
   * Image
