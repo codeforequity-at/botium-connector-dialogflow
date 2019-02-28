@@ -112,6 +112,13 @@ If Connector extracts zero messages, then creates a dummy one, to hold the NLP i
 
 Default _true_
 
+### DIALOGFLOW_BUTTON_EVENTS
+Default _true_
+
+Botium simulates button clicks by using [Dialogflow "Events"](https://dialogflow.com/docs/events). If the payload of the button click simulation is valid JSON, it should include a ["name" and a "parameters" attribute](https://cloud.google.com/dialogflow-enterprise/docs/reference/rpc/google.cloud.dialogflow.v2#google.cloud.dialogflow.v2.EventInput), otherwise the named event without parameters is triggered.
+
+By setting this capability to _false_ this behaviour can be disabled and a button click is sent as text input to Dialogflow.
+
 ### DIALOGFLOW_INPUT_CONTEXT_NAME(_X)
 
 You can use [Contexts](https://dialogflow.com/docs/contexts). They can be useful if you dont want to start the conversation from beginning, 

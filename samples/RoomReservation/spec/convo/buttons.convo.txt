@@ -1,0 +1,13 @@
+buttons
+
+#me
+buttons
+
+#bot
+BUTTONS QuickReply1|QuickReply2|QuickReply3
+
+#me
+BUTTON QuickReply1
+
+#bot
+You selected QuickReply1
