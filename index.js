@@ -16,12 +16,14 @@ const Capabilities = {
   DIALOGFLOW_INPUT_CONTEXT_LIFESPAN: 'DIALOGFLOW_INPUT_CONTEXT_LIFESPAN',
   DIALOGFLOW_INPUT_CONTEXT_PARAMETERS: 'DIALOGFLOW_INPUT_CONTEXT_PARAMETERS',
   DIALOGFLOW_OUTPUT_PLATFORM: 'DIALOGFLOW_OUTPUT_PLATFORM',
-  DIALOGFLOW_FORCE_INTENT_RESOLUTION: 'DIALOGFLOW_FORCE_INTENT_RESOLUTION'
+  DIALOGFLOW_FORCE_INTENT_RESOLUTION: 'DIALOGFLOW_FORCE_INTENT_RESOLUTION',
+  DIALOGFLOW_BUTTON_EVENTS: 'DIALOGFLOW_BUTTON_EVENTS'
 }
 
 const Defaults = {
   [Capabilities.DIALOGFLOW_LANGUAGE_CODE]: 'en-US',
-  [Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]: true
+  [Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]: true,
+  [Capabilities.DIALOGFLOW_BUTTON_EVENTS]: true
 }
 
 class BotiumConnectorDialogflow {
@@ -37,6 +39,7 @@ class BotiumConnectorDialogflow {
     if (!this.caps[Capabilities.DIALOGFLOW_PRIVATE_KEY]) throw new Error('DIALOGFLOW_PRIVATE_KEY capability required')
     if (!this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE]) this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE] = Defaults[Capabilities.DIALOGFLOW_LANGUAGE_CODE]
     if (!this.caps[Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]) this.caps[Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION] = Defaults[Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]
+    if (!this.caps[Capabilities.DIALOGFLOW_BUTTON_EVENTS]) this.caps[Capabilities.DIALOGFLOW_BUTTON_EVENTS] = Defaults[Capabilities.DIALOGFLOW_BUTTON_EVENTS]
 
     const contextSuffixes = this._getContextSuffixes()
     contextSuffixes.forEach((contextSuffix) => {
@@ -78,10 +81,23 @@ class BotiumConnectorDialogflow {
       const request = {
         session: this.sessionPath,
         queryInput: {
-          text: {
-            text: msg.messageText,
+        }
+      }
+      if (this.caps[Capabilities.DIALOGFLOW_BUTTON_EVENTS] && msg.buttons && msg.buttons.length > 0 && (msg.buttons[0].text || msg.buttons[0].payload)) {
+        let payload = msg.buttons[0].payload || msg.buttons[0].text
+        try {
+          payload = JSON.parse(payload)
+          request.queryInput.event = Object.assign({}, { languageCode: this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE] }, payload)
+        } catch (err) {
+          request.queryInput.event = {
+            name: payload,
             languageCode: this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE]
           }
+        }
+      } else {
+        request.queryInput.text = {
+          text: msg.messageText,
+          languageCode: this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE]
         }
       }
       request.queryParams = this.queryParams

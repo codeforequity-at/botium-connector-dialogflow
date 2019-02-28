@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "botium-bindings": "latest",
-    "botium-connector-dialogflow": "latest",
+    "botium-connector-dialogflow": "../..",
     "cross-env": "^5.2.0",
     "mocha": "latest"
   }
