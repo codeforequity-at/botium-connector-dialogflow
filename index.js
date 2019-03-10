@@ -128,10 +128,15 @@ class BotiumConnectorDialogflow {
             })
             : []
         }
-        const fulfillmentMessages = response.queryResult.fulfillmentMessages.filter(f =>
+        let fulfillmentMessages = response.queryResult.fulfillmentMessages.filter(f =>
           (this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM] && f.platform === this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM]) ||
             (!this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM] && (f.platform === 'PLATFORM_UNSPECIFIED' || !f.platform))
         )
+        // use default if platform specific is not found
+        if (!fulfillmentMessages.length && this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM]) {
+          fulfillmentMessages = response.queryResult.fulfillmentMessages.filter(f =>
+            (f.platform === 'PLATFORM_UNSPECIFIED' || !f.platform))
+        }
         let forceIntentResolution = this.caps[Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]
         fulfillmentMessages.forEach((fulfillmentMessage) => {
           let acceptedResponse = true
