@@ -1,0 +1,12 @@
+list
+
+#me
+listselect
+
+#bot
+this is a listselect
+
+#bot
+My List
+MEDIA http://www.botium.at/images/logo.png
+BUTTONS Botium1|Botium2

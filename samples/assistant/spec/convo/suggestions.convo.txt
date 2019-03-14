@@ -1,0 +1,7 @@
+suggestions
+
+#me
+buttons
+
+#bot
+BUTTONS Quick Reply 1|Quick Reply 2|Quick Reply 3

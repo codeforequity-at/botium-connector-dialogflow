@@ -1,0 +1,8 @@
+basiccard
+
+#me
+card
+
+#bot
+BUTTONS Botium Website
+MEDIA http://www.botium.at/images/logo.png
