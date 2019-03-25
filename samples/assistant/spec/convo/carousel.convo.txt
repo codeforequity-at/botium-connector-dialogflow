@@ -1,0 +1,8 @@
+carousel
+
+#me
+carousel
+
+#bot
+MEDIA http://www.botium.at/images/logo.png
+BUTTONS Botium1|Botium2

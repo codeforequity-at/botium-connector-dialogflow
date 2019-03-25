@@ -143,6 +143,8 @@ class BotiumConnectorDialogflow {
           const botMsg = { sender: 'bot', sourceData: response.queryResult, nlp }
           if (fulfillmentMessage.text) {
             botMsg.messageText = fulfillmentMessage.text.text[0]
+          } else if (fulfillmentMessage.simpleResponses) {
+            botMsg.messageText = fulfillmentMessage.simpleResponses.simpleResponses[0].textToSpeech
           } else if (fulfillmentMessage.image) {
             botMsg.media = [{
               mediaUri: fulfillmentMessage.image.imageUri,
@@ -151,6 +153,7 @@ class BotiumConnectorDialogflow {
           } else if (fulfillmentMessage.quickReplies) {
             botMsg.buttons = fulfillmentMessage.quickReplies.quickReplies.map((q) => ({ text: q }))
           } else if (fulfillmentMessage.card) {
+            botMsg.messageText = fulfillmentMessage.card.title
             botMsg.cards = [{
               text: fulfillmentMessage.card.title,
               image: fulfillmentMessage.card.imageUri && {
@@ -159,6 +162,44 @@ class BotiumConnectorDialogflow {
               },
               buttons: fulfillmentMessage.card.buttons && fulfillmentMessage.card.buttons.map((q) => ({ text: q.text, payload: q.postback }))
             }]
+          } else if (fulfillmentMessage.basicCard) {
+            botMsg.messageText = fulfillmentMessage.basicCard.title
+            botMsg.cards = [{
+              text: fulfillmentMessage.basicCard.title,
+              image: fulfillmentMessage.basicCard.image && {
+                mediaUri: fulfillmentMessage.basicCard.image.imageUri,
+                mimeType: mime.lookup(fulfillmentMessage.basicCard.image.imageUri) || 'application/unknown',
+                altText: fulfillmentMessage.basicCard.image.accessibilityText
+              },
+              buttons: fulfillmentMessage.basicCard.buttons && fulfillmentMessage.basicCard.buttons.map((q) => ({ text: q.title, payload: q.openUriAction && q.openUriAction.uri }))
+            }]
+          } else if (fulfillmentMessage.listSelect) {
+            botMsg.messageText = fulfillmentMessage.listSelect.title
+            botMsg.cards = fulfillmentMessage.listSelect.items.map(item => ({
+              text: item.title,
+              subtext: item.description,
+              image: item.image && {
+                mediaUri: item.image.imageUri,
+                mimeType: mime.lookup(item.image.imageUri) || 'application/unknown',
+                altText: item.image.accessibilityText
+              },
+              buttons: item.info && item.info.key && [ { text: item.info.key } ]
+            }))
+          } else if (fulfillmentMessage.carouselSelect) {
+            botMsg.cards = fulfillmentMessage.carouselSelect.items.map(item => ({
+              text: item.title,
+              subtext: item.description,
+              image: item.image && {
+                mediaUri: item.image.imageUri,
+                mimeType: mime.lookup(item.image.imageUri) || 'application/unknown',
+                altText: item.image.accessibilityText
+              },
+              buttons: item.info && item.info.key && [ { text: item.info.key } ]
+            }))
+          } else if (fulfillmentMessage.suggestions) {
+            botMsg.buttons = fulfillmentMessage.suggestions.suggestions && fulfillmentMessage.suggestions.suggestions.map((q) => ({ text: q.title }))
+          } else if (fulfillmentMessage.linkOutSuggestion) {
+            botMsg.buttons = [ { text: fulfillmentMessage.linkOutSuggestion.destinationName, payload: fulfillmentMessage.linkOutSuggestion.uri } ]
           } else {
             acceptedResponse = false
           }
