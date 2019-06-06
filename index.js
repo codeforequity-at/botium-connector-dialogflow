@@ -118,25 +118,20 @@ class BotiumConnectorDialogflow {
         resolve(this)
 
         let nlp = {
-          intent: {
-            name: response.queryResult.intent.displayName,
-            confidence: response.queryResult.intentDetectionConfidence
-          },
-          entities: (response.queryResult.parameters && response.queryResult.parameters.fields)
-            ? Object.keys(response.queryResult.parameters.fields).map((key) => {
-              return {name: key, value: response.queryResult.parameters.fields[key].stringValue}
-            })
-            : []
+          intent: this._extractIntent(response),
+          entities: this._extractEntities(response)
         }
         let fulfillmentMessages = response.queryResult.fulfillmentMessages.filter(f =>
           (this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM] && f.platform === this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM]) ||
-            (!this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM] && (f.platform === 'PLATFORM_UNSPECIFIED' || !f.platform))
+          (!this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM] && (f.platform === 'PLATFORM_UNSPECIFIED' || !f.platform))
         )
+
         // use default if platform specific is not found
         if (!fulfillmentMessages.length && this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM]) {
           fulfillmentMessages = response.queryResult.fulfillmentMessages.filter(f =>
             (f.platform === 'PLATFORM_UNSPECIFIED' || !f.platform))
         }
+
         let forceIntentResolution = this.caps[Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]
         fulfillmentMessages.forEach((fulfillmentMessage) => {
           let acceptedResponse = true
@@ -235,11 +230,11 @@ class BotiumConnectorDialogflow {
   _createContext (contextSuffix) {
     const contextPath = this.contextClient.contextPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID],
       this.conversationId, this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_NAME + contextSuffix])
-    const context = {lifespanCount: parseInt(this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_LIFESPAN + contextSuffix]), name: contextPath}
+    const context = { lifespanCount: parseInt(this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_LIFESPAN + contextSuffix]), name: contextPath }
     if (this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_PARAMETERS + contextSuffix]) {
       context.parameters = structjson.jsonToStructProto(this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_PARAMETERS + contextSuffix])
     }
-    const request = {parent: this.sessionPath, context: context}
+    const request = { parent: this.sessionPath, context: context }
     return this.contextClient.createContext(request)
   }
 
@@ -250,6 +245,55 @@ class BotiumConnectorDialogflow {
       suffixes.push(key.substring(Capabilities.DIALOGFLOW_INPUT_CONTEXT_NAME.length))
     })
     return suffixes
+  }
+
+  _extractIntent (response) {
+    if (response.queryResult.intent) {
+      return {
+        name: response.queryResult.intent.displayName,
+        confidence: response.queryResult.intentDetectionConfidence
+      }
+    }
+    return {}
+  }
+
+  _extractEntities (response) {
+    if (response.queryResult.parameters && response.queryResult.parameters.fields) {
+      return this._extractEntitiesFromFields('', response.queryResult.parameters.fields)
+    }
+    return []
+  }
+
+  _extractEntitiesFromFields (keyPrefix, fields) {
+    return Object.keys(fields).reduce((entities, key) => {
+      return entities.concat(this._extractEntityValues(`${keyPrefix ? keyPrefix + '.' : ''}${key}`, fields[key]))
+    }, [])
+  }
+
+  _extractEntityValues (key, field) {
+    if (['numberValue', 'stringValue', 'boolValue', 'nullValue'].indexOf(field.kind) >= 0) {
+      return [{
+        name: key,
+        value: `${field[field.kind]}`
+      }]
+    }
+    if (field.kind === 'structValue') {
+      return this._extractEntitiesFromFields(key, field.structValue.fields)
+    }
+    if (field.kind === 'listValue') {
+      if (field.listValue.values && field.listValue.values.length > 0) {
+        return field.listValue.values.reduce((entities, lv, i) => {
+          return entities.concat(this._extractEntityValues(`${key}.${i}`, lv))
+        }, [])
+      } else {
+        return [{
+          name: key,
+          value: ''
+        }]
+      }
+    }
+    debug(`Unsupported entity kind ${field.kind}, skipping entity.`)
+    return []
   }
 }
 
