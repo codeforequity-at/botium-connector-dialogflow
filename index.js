@@ -5,6 +5,8 @@ const dialogflow = require('dialogflow')
 const _ = require('lodash')
 const debug = require('debug')('botium-connector-dialogflow')
 
+const { importDialogflowIntents, importDialogflowConversations } = require('./src/dialogflowintents')
+
 const structjson = require('./structjson')
 
 const Capabilities = {
@@ -124,7 +126,7 @@ class BotiumConnectorDialogflow {
           },
           entities: (response.queryResult.parameters && response.queryResult.parameters.fields)
             ? Object.keys(response.queryResult.parameters.fields).map((key) => {
-              return {name: key, value: response.queryResult.parameters.fields[key].stringValue}
+              return { name: key, value: response.queryResult.parameters.fields[key].stringValue }
             })
             : []
         }
@@ -235,11 +237,11 @@ class BotiumConnectorDialogflow {
   _createContext (contextSuffix) {
     const contextPath = this.contextClient.contextPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID],
       this.conversationId, this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_NAME + contextSuffix])
-    const context = {lifespanCount: parseInt(this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_LIFESPAN + contextSuffix]), name: contextPath}
+    const context = { lifespanCount: parseInt(this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_LIFESPAN + contextSuffix]), name: contextPath }
     if (this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_PARAMETERS + contextSuffix]) {
       context.parameters = structjson.jsonToStructProto(this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_PARAMETERS + contextSuffix])
     }
-    const request = {parent: this.sessionPath, context: context}
+    const request = { parent: this.sessionPath, context: context }
     return this.contextClient.createContext(request)
   }
 
@@ -255,5 +257,9 @@ class BotiumConnectorDialogflow {
 
 module.exports = {
   PluginVersion: 1,
-  PluginClass: BotiumConnectorDialogflow
+  PluginClass: BotiumConnectorDialogflow,
+  Utils: {
+    importDialogflowIntents,
+    importDialogflowConversations
+  }
 }

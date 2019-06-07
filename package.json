@@ -4,6 +4,9 @@
   "description": "Botium Connector for Google Dialogflow",
   "main": "dist/botium-connector-dialogflow-cjs.js",
   "module": "dist/botium-connector-dialogflow-es.js",
+  "bin": {
+    "botium-connector-dialogflow-cli": "./bin/cli.js"
+  },
   "scripts": {
     "build": "npm run eslint && rollup -c",
     "eslint": "eslint index.js"
@@ -32,10 +35,17 @@
     "rollup-plugin-node-resolve": "^3.3.0"
   },
   "dependencies": {
+    "adm-zip": "^0.4.13",
     "debug": "^3.1.0",
     "dialogflow": "^0.5.0",
     "lodash": "^4.17.10",
     "mime-types": "^2.1.20",
-    "uuid": "^3.3.2"
+    "slug": "^1.1.0",
+    "uuid": "^3.3.2",
+    "yargs": "^13.2.4"
+  },
+  "peerDependencies": {
+    "botium-core": "^1.4.15",
+    "botium-connector-echo": "^0.0.1"
   }
 }
