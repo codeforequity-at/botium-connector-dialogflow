@@ -4,6 +4,9 @@
   "description": "Botium Connector for Google Dialogflow",
   "main": "dist/botium-connector-dialogflow-cjs.js",
   "module": "dist/botium-connector-dialogflow-es.js",
+  "engines": {
+    "node": ">=8.3"
+  },
   "bin": {
     "botium-connector-dialogflow-cli": "./bin/cli.js"
   },
