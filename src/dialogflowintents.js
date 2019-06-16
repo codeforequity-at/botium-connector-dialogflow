@@ -10,21 +10,24 @@ const botium = require('botium-core')
 const debug = require('debug')('botium-connector-dialogflow-intents')
 const helpers = require('./helpers')
 
-const importIntents = (outputDir, botiumContext, filesWritten) => {
+const importIntents = (botiumContext) => {
   const intentEntries = botiumContext.zipEntries.filter((zipEntry) => zipEntry.entryName.startsWith('intent') && !zipEntry.entryName.match('usersays'))
+
+  const convos = []
+  const utterances = []
 
   intentEntries.forEach((zipEntry) => {
     const intent = JSON.parse(botiumContext.unzip.readAsText(zipEntry.entryName))
     if (intent.parentId) return
 
-    const utterancesEntry = zipEntry.entryName.replace('.json', '') + '_usersays_' + botiumContext.agentInfo.language + '.json'
-    debug(`Found root intent ${intent.name}, checking for utterances in ${utterancesEntry}`)
-    if (!botiumContext.zipEntries.find((zipEntry) => zipEntry.entryName === utterancesEntry)) {
+    const utterancesEntryName = zipEntry.entryName.replace('.json', '') + '_usersays_' + botiumContext.agentInfo.language + '.json'
+    debug(`Found root intent ${intent.name}, checking for utterances in ${utterancesEntryName}`)
+    if (!botiumContext.zipEntries.find((zipEntry) => zipEntry.entryName === utterancesEntryName)) {
       debug(`Utterances files not found for ${intent.name}, ignoring intent`)
       return
     }
-    const utterances = JSON.parse(botiumContext.unzip.readAsText(utterancesEntry))
-    const inputUtterances = utterances.map((utterance) => utterance.data.reduce((accumulator, currentValue) => accumulator + '' + currentValue.text, ''))
+    const utterancesEntry = JSON.parse(botiumContext.unzip.readAsText(utterancesEntryName))
+    const inputUtterances = utterancesEntry.map((utterance) => utterance.data.reduce((accumulator, currentValue) => accumulator + '' + currentValue.text, ''))
     const utteranceRef = slug(intent.name + '_input')
 
     const convo = {
@@ -47,24 +50,21 @@ const importIntents = (outputDir, botiumContext, filesWritten) => {
         }
       ]
     }
-    try {
-      const filename = helpers.writeConvo(botiumContext.compiler, convo, outputDir)
-      console.log(`SUCCESS: wrote convo to file ${filename}`)
-    } catch (err) {
-      console.log(`WARNING: writing convo for intent "${intent.intent}" failed: ${util.inspect(err)}`)
-    }
-    try {
-      const filename = helpers.writeUtterances(botiumContext.compiler, utteranceRef, inputUtterances, outputDir)
-      console.log(`SUCCESS: wrote utterances to file ${filename}`)
-    } catch (err) {
-      console.log(`WARNING: writing utterances for intent "${intent.intent}" failed: ${util.inspect(err)}`)
-    }
+
+    convos.push(convo)
+    utterances.push({
+      name: utteranceRef,
+      utterances: inputUtterances
+    })
   })
-  filesWritten()
+  return { convos, utterances }
 }
 
-const importConversations = (outputDir, botiumContext, filesWritten) => {
+const importConversations = (botiumContext) => {
   const intentEntries = botiumContext.zipEntries.filter((zipEntry) => zipEntry.entryName.startsWith('intent') && !zipEntry.entryName.match('usersays'))
+
+  const convos = []
+  const utterances = []
 
   const intentsById = {}
   intentEntries.forEach((zipEntry) => {
@@ -130,12 +130,10 @@ const importConversations = (outputDir, botiumContext, filesWritten) => {
     const utterancesRef = slug(intent.name + '_input')
     cp.push({ sender: 'me', messageText: utterancesRef, intent: intent.name })
 
-    try {
-      const filename = helpers.writeUtterances(botiumContext.compiler, utterancesRef, intent.inputUtterances, outputDir)
-      console.log(`SUCCESS: wrote utterances to file ${filename}`)
-    } catch (err) {
-      console.log(`WARNING: writing input utterances for intent "${intent.intent}" failed: ${util.inspect(err)}`)
-    }
+    utterances.push({
+      name: utterancesRef,
+      utterances: intent.inputUtterances
+    })
 
     if (intent.outputUtterances && intent.outputUtterances.length > 0) {
       for (let stepIndex = 0; stepIndex < intent.outputUtterances.length; stepIndex++) {
@@ -143,12 +141,10 @@ const importConversations = (outputDir, botiumContext, filesWritten) => {
           const utterancesRef = slug(intent.name + '_output_' + stepIndex)
 
           cp.push({ sender: 'bot', messageText: utterancesRef })
-          try {
-            const filename = helpers.writeUtterances(botiumContext.compiler, utterancesRef, intent.outputUtterances[stepIndex], outputDir)
-            console.log(`SUCCESS: wrote utterances to file ${filename}`)
-          } catch (err) {
-            console.log(`WARNING: writing output utterances for intent "${intent.intent}" failed: ${util.inspect(err)}`)
-          }
+          utterances.push({
+            name: utterancesRef,
+            utterances: intent.outputUtterances[stepIndex]
+          })
         } else {
           cp.push({ sender: 'bot', messageText: '!INCOMPREHENSION' })
         }
@@ -169,17 +165,12 @@ const importConversations = (outputDir, botiumContext, filesWritten) => {
         conversation: cp
       }
       debug(convo)
-      try {
-        const filename = helpers.writeConvo(botiumContext.compiler, convo, outputDir)
-        console.log(`SUCCESS: wrote convo to file ${filename}`)
-      } catch (err) {
-        console.log(`WARNING: writing convo for intent "${intent.intent}" failed: ${util.inspect(err)}`)
-      }
+      convos.push(convo)
     }
   }
   Object.keys(intentsById).forEach((intentId) => follow(intentsById[intentId], []))
 
-  filesWritten()
+  return { convos, utterances }
 }
 
 const loadAgentZip = (filenameOrRawData) => {
@@ -194,9 +185,9 @@ const loadAgentZip = (filenameOrRawData) => {
   return result
 }
 
-const importDialogflow = (outputDir, agentzip, importFunction) => {
+const importDialogflow = (agentzip, caps, importFunction) => {
   return new Promise((resolve, reject) => {
-    const caps = {}
+    if (!caps) caps = {}
     if (agentzip) {
       caps[botium.Capabilities.CONTAINERMODE] = 'echo'
     } else {
@@ -211,6 +202,10 @@ const importDialogflow = (outputDir, agentzip, importFunction) => {
       unzip: null,
       zipEntries: null,
       agentInfo: null
+    }
+
+    const result = {
+      botiumContext
     }
 
     async.series([
@@ -228,7 +223,6 @@ const importDialogflow = (outputDir, agentzip, importFunction) => {
           botiumContext.compiler = botiumContext.driver.BuildCompiler()
           compilerReady()
         } catch (err) {
-          console.log(err)
           compilerReady(err)
         }
       },
@@ -239,7 +233,6 @@ const importDialogflow = (outputDir, agentzip, importFunction) => {
             botiumContext.agentsClient = new dialogflow.AgentsClient(botiumContext.container.pluginInstance.sessionOpts)
             botiumContext.projectPath = botiumContext.agentsClient.projectPath(botiumContext.container.caps['DIALOGFLOW_PROJECT_ID'])
           } catch (err) {
-            console.log(err)
             return agentRead(err)
           }
         }
@@ -274,14 +267,18 @@ const importDialogflow = (outputDir, agentzip, importFunction) => {
       },
 
       (filesWritten) => {
-        importFunction(outputDir, botiumContext, filesWritten)
+        try {
+          Object.assign(result, importFunction(botiumContext))
+          filesWritten()
+        } catch (err) {
+          filesWritten(err)
+        }
       }
     ],
     (err) => {
       if (err) {
-        console.log(`FAILED: ${err}`)
         reject(err)
-      } else resolve()
+      } else resolve(result)
     })
   })
 }
@@ -293,16 +290,43 @@ const handler = (argv) => {
     return yargsCmd.showHelp()
   }
 
+  let importPromise = null
   if (argv.source === 'dialogflow-intents') {
-    importDialogflow((argv.convos && argv.convos[0]) || '.', argv.agentzip, importIntents).catch(() => {})
+    importPromise = importDialogflow(argv.agentzip, {}, importIntents)
   } else if (argv.source === 'dialogflow-conversations') {
-    importDialogflow((argv.convos && argv.convos[0]) || '.', argv.agentzip, importConversations).catch(() => {})
+    importPromise = importDialogflow(argv.agentzip, {}, importConversations)
+  }
+  if (importPromise) {
+    importPromise
+      .then(({ convos, utterances, botiumContext }) => {
+        const outputDir = (argv.convos && argv.convos[0]) || '.'
+
+        for (const convo of convos) {
+          try {
+            const filename = helpers.writeConvo(botiumContext.compiler, convo, outputDir)
+            console.log(`SUCCESS: wrote convo to file ${filename}`)
+          } catch (err) {
+            console.log(`WARNING: writing convo "${convo.header.name}" failed: ${util.inspect(err)}`)
+          }
+        }
+        for (const utterance of utterances) {
+          try {
+            const filename = helpers.writeUtterances(botiumContext.compiler, utterance.name, utterance.utterances, outputDir)
+            console.log(`SUCCESS: wrote utterances to file ${filename}`)
+          } catch (err) {
+            console.log(`WARNING: writing utterances "${utterance.name}" failed: ${util.inspect(err)}`)
+          }
+        }
+      })
+      .catch((err) => {
+        console.log(`FAILED: ${err}`)
+      })
   }
 }
 
 module.exports = {
-  importDialogflowIntents: (outputDir, agentzip) => importDialogflow(outputDir, agentzip, importIntents),
-  importDialogflowConversations: (outputDir, agentzip) => importDialogflow(outputDir, agentzip, importConversations),
+  importDialogflowIntents: (agentzip, caps) => importDialogflow(agentzip, caps, importIntents),
+  importDialogflowConversations: (agentzip, caps) => importDialogflow(agentzip, caps, importConversations),
   args: {
     command: 'dialogflowimport [source]',
     describe: 'Importing conversations for Botium',
