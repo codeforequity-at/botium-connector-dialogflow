@@ -2,7 +2,6 @@ const util = require('util')
 const path = require('path')
 const yargsCmd = require('yargs')
 const slug = require('slug')
-const async = require('async')
 const AdmZip = require('adm-zip')
 const dialogflow = require('dialogflow')
 const _ = require('lodash')
@@ -10,23 +9,23 @@ const botium = require('botium-core')
 const debug = require('debug')('botium-connector-dialogflow-intents')
 const helpers = require('./helpers')
 
-const importIntents = (botiumContext) => {
-  const intentEntries = botiumContext.zipEntries.filter((zipEntry) => zipEntry.entryName.startsWith('intent') && !zipEntry.entryName.match('usersays'))
+const importIntents = ({ agentInfo, zipEntries, unzip }) => {
+  const intentEntries = zipEntries.filter((zipEntry) => zipEntry.entryName.startsWith('intent') && !zipEntry.entryName.match('usersays'))
 
   const convos = []
   const utterances = []
 
   intentEntries.forEach((zipEntry) => {
-    const intent = JSON.parse(botiumContext.unzip.readAsText(zipEntry.entryName))
+    const intent = JSON.parse(unzip.readAsText(zipEntry.entryName))
     if (intent.parentId) return
 
-    const utterancesEntryName = zipEntry.entryName.replace('.json', '') + '_usersays_' + botiumContext.agentInfo.language + '.json'
+    const utterancesEntryName = zipEntry.entryName.replace('.json', '') + '_usersays_' + agentInfo.language + '.json'
     debug(`Found root intent ${intent.name}, checking for utterances in ${utterancesEntryName}`)
-    if (!botiumContext.zipEntries.find((zipEntry) => zipEntry.entryName === utterancesEntryName)) {
+    if (!zipEntries.find((zipEntry) => zipEntry.entryName === utterancesEntryName)) {
       debug(`Utterances files not found for ${intent.name}, ignoring intent`)
       return
     }
-    const utterancesEntry = JSON.parse(botiumContext.unzip.readAsText(utterancesEntryName))
+    const utterancesEntry = JSON.parse(unzip.readAsText(utterancesEntryName))
     const inputUtterances = utterancesEntry.map((utterance) => utterance.data.reduce((accumulator, currentValue) => accumulator + '' + currentValue.text, ''))
     const utteranceRef = slug(intent.name + '_input')
 
@@ -60,25 +59,25 @@ const importIntents = (botiumContext) => {
   return { convos, utterances }
 }
 
-const importConversations = (botiumContext) => {
-  const intentEntries = botiumContext.zipEntries.filter((zipEntry) => zipEntry.entryName.startsWith('intent') && !zipEntry.entryName.match('usersays'))
+const importConversations = ({ agentInfo, zipEntries, unzip }) => {
+  const intentEntries = zipEntries.filter((zipEntry) => zipEntry.entryName.startsWith('intent') && !zipEntry.entryName.match('usersays'))
 
   const convos = []
   const utterances = []
 
   const intentsById = {}
   intentEntries.forEach((zipEntry) => {
-    const intent = JSON.parse(botiumContext.unzip.readAsText(zipEntry.entryName))
+    const intent = JSON.parse(unzip.readAsText(zipEntry.entryName))
 
-    const utterancesEntry = zipEntry.entryName.replace('.json', '') + '_usersays_' + botiumContext.agentInfo.language + '.json'
+    const utterancesEntry = zipEntry.entryName.replace('.json', '') + '_usersays_' + agentInfo.language + '.json'
     debug(`Found intent ${intent.name}, checking for utterances in ${utterancesEntry}`)
-    if (!botiumContext.zipEntries.find((zipEntry) => zipEntry.entryName === utterancesEntry)) {
+    if (!zipEntries.find((zipEntry) => zipEntry.entryName === utterancesEntry)) {
       debug(`Utterances files not found for ${intent.name}, ignoring intent`)
       return
     }
     intentsById[intent.id] = intent
 
-    const utterances = JSON.parse(botiumContext.unzip.readAsText(utterancesEntry))
+    const utterances = JSON.parse(unzip.readAsText(utterancesEntry))
     intent.inputUtterances = utterances.map((utterance) => utterance.data.reduce((accumulator, currentValue) => accumulator + '' + currentValue.text, ''))
     debug(`Utterances file for ${intent.name}: ${intent.inputUtterances}`)
 
@@ -87,7 +86,7 @@ const importConversations = (botiumContext) => {
       intent.responses.forEach((response) => {
         if (response.messages) {
           const speechOutputs = response.messages
-            .filter((message) => message.type === 0 && message.lang === botiumContext.agentInfo.language && message.speech)
+            .filter((message) => message.type === 0 && message.lang === agentInfo.language && message.speech)
             .reduce((acc, message) => {
               if (_.isArray(message.speech)) acc = acc.concat(message.speech)
               else acc.push(message.speech)
@@ -185,102 +184,60 @@ const loadAgentZip = (filenameOrRawData) => {
   return result
 }
 
-const importDialogflow = (agentzip, caps, importFunction) => {
-  return new Promise((resolve, reject) => {
-    if (!caps) caps = {}
-    if (agentzip) {
-      caps[botium.Capabilities.CONTAINERMODE] = 'echo'
-    } else {
-      caps[botium.Capabilities.CONTAINERMODE] = path.resolve(__dirname, '..', 'index.js')
-    }
-    const botiumContext = {
-      driver: new botium.BotDriver(caps),
-      compiler: null,
-      container: null,
-      agentsClient: null,
-      projectPath: null,
-      unzip: null,
-      zipEntries: null,
-      agentInfo: null
-    }
+const importDialogflow = async (agentzip, caps, importFunction) => {
+  if (!caps) caps = {}
+  if (agentzip) {
+    caps[botium.Capabilities.CONTAINERMODE] = 'echo'
+  } else {
+    caps[botium.Capabilities.CONTAINERMODE] = path.resolve(__dirname, '..', 'index.js')
+  }
+  const botiumContext = {
+    driver: new botium.BotDriver(caps),
+    compiler: null,
+    container: null,
+    unzip: null,
+    zipEntries: null,
+    agentInfo: null
+  }
 
-    const result = {
-      botiumContext
-    }
+  const result = {
+    botiumContext
+  }
 
-    async.series([
-      (containerReady) => {
-        botiumContext.driver.Build()
-          .then((c) => {
-            botiumContext.container = c
-            containerReady()
-          })
-          .catch(containerReady)
-      },
+  botiumContext.container = await botiumContext.driver.Build()
+  botiumContext.compiler = await botiumContext.driver.BuildCompiler()
 
-      (compilerReady) => {
-        try {
-          botiumContext.compiler = botiumContext.driver.BuildCompiler()
-          compilerReady()
-        } catch (err) {
-          compilerReady(err)
-        }
-      },
+  if (!agentzip) {
+    try {
+      const agentsClient = new dialogflow.AgentsClient(botiumContext.container.pluginInstance.sessionOpts)
+      const projectPath = agentsClient.projectPath(botiumContext.container.caps['DIALOGFLOW_PROJECT_ID'])
 
-      (agentRead) => {
-        if (!agentzip) {
-          try {
-            botiumContext.agentsClient = new dialogflow.AgentsClient(botiumContext.container.pluginInstance.sessionOpts)
-            botiumContext.projectPath = botiumContext.agentsClient.projectPath(botiumContext.container.caps['DIALOGFLOW_PROJECT_ID'])
-          } catch (err) {
-            return agentRead(err)
-          }
-        }
-        agentRead()
-      },
-
-      (agentExported) => {
-        if (agentzip) {
-          try {
-            Object.assign(botiumContext, loadAgentZip(agentzip))
-            agentExported()
-          } catch (err) {
-            agentExported(`Dialogflow agent unpack failed: ${util.inspect(err)}`)
-          }
-        } else {
-          botiumContext.agentsClient.exportAgent({ parent: botiumContext.projectPath })
-            .then(responses => responses[0].promise())
-            .then(responses => {
-              try {
-                let buf = Buffer.from(responses[0].agentContent, 'base64')
-                Object.assign(botiumContext, loadAgentZip(buf))
-
-                agentExported()
-              } catch (err) {
-                agentExported(`Dialogflow agent unpack failed: ${util.inspect(err)}`)
-              }
-            })
-            .catch(err => {
-              agentExported(`Dialogflow agent connection failed: ${util.inspect(err)}`)
-            })
-        }
-      },
-
-      (filesWritten) => {
-        try {
-          Object.assign(result, importFunction(botiumContext))
-          filesWritten()
-        } catch (err) {
-          filesWritten(err)
-        }
+      const allResponses = await agentsClient.exportAgent({ parent: projectPath })
+      const responses = await allResponses[0].promise()
+      try {
+        let buf = Buffer.from(responses[0].agentContent, 'base64')
+        Object.assign(botiumContext, loadAgentZip(buf))
+      } catch (err) {
+        throw new Error(`Dialogflow agent unpack failed: ${util.inspect(err)}`)
       }
-    ],
-    (err) => {
-      if (err) {
-        reject(err)
-      } else resolve(result)
-    })
-  })
+    } catch (err) {
+      throw new Error(`Dialogflow agent connection failed: ${util.inspect(err)}`)
+    }
+  } else {
+    try {
+      Object.assign(botiumContext, loadAgentZip(agentzip))
+    } catch (err) {
+      throw new Error(`Dialogflow agent unpack failed: ${util.inspect(err)}`)
+    }
+  }
+  Object.assign(result, importFunction(botiumContext))
+
+  try {
+    await botiumContext.container.Clean()
+  } catch (err) {
+    debug(`Error container cleanup: ${util.inspect(err)}`)
+  }
+  return result
 }
 
 const handler = (argv) => {
