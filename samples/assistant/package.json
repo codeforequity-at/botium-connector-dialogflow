@@ -4,7 +4,9 @@
   "description": "",
   "main": "botiumFluent.js",
   "scripts": {
-    "test": "mocha spec"
+    "test": "mocha spec",
+    "import-intents": "botium-connector-dialogflow-cli dialogflowimport dialogflow-intents",
+    "import-conversations": "botium-connector-dialogflow-cli dialogflowimport dialogflow-conversations"
   },
   "keywords": [],
   "author": "",

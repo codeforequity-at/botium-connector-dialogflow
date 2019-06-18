@@ -5,6 +5,8 @@ const dialogflow = require('dialogflow')
 const _ = require('lodash')
 const debug = require('debug')('botium-connector-dialogflow')
 
+const { importDialogflowIntents, importDialogflowConversations } = require('./src/dialogflowintents')
+
 const structjson = require('./structjson')
 
 const Capabilities = {
@@ -299,5 +301,9 @@ class BotiumConnectorDialogflow {
 
 module.exports = {
   PluginVersion: 1,
-  PluginClass: BotiumConnectorDialogflow
+  PluginClass: BotiumConnectorDialogflow,
+  Utils: {
+    importDialogflowIntents,
+    importDialogflowConversations
+  }
 }
