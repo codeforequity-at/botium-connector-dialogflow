@@ -1,0 +1,37 @@
+transfer
+
+#me
+transfer money
+
+#bot
+Sure. Transfer from which account?
+INTENT transfer.money
+ENTITIES account-from|account-to|amount
+
+#me
+savings
+
+#bot
+To which account?
+INTENT transfer.money
+ENTITIES account-from.0|account-to|amount
+ENTITY_VALUES savings account||
+
+#me
+checking
+
+#bot
+And, how much do you want to transfer?
+INTENT transfer.money
+ENTITIES account-from.0|account-to|amount
+ENTITY_VALUES savings account|checking account|
+
+#me
+10 USD
+
+#bot
+All right. So, you're transferring 10 USD from your savings account to a checking account. Is that right?
+INTENT transfer.money
+ENTITIES account-from.0|account-to|amount.amount|amount.currency
+ENTITY_VALUES savings account|checking account|10|USD
+

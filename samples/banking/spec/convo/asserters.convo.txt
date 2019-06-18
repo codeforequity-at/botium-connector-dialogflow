@@ -4,7 +4,7 @@ asserters
 hello
 
 #bot
-hii
+Hello
 INTENT Default Welcome Intent
 INTENT_CONFIDENCE 70
 
@@ -12,7 +12,7 @@ INTENT_CONFIDENCE 70
 check my credit card balance
 
 #bot
-aszta
+Here's your latest balance
 INTENT account.balance.check
 INTENT_CONFIDENCE 80
 ENTITIES account
