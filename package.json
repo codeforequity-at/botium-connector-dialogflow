@@ -46,8 +46,9 @@
     "adm-zip": "^0.4.13",
     "debug": "^4.1.1",
     "dialogflow": "^0.10.1",
-    "mime-types": "^2.1.24",
     "lodash": "^4.17.11",
+    "mime-types": "^2.1.24",
+    "mkdirp": "^0.5.1",
     "slug": "^1.1.0",
     "uuid": "^3.3.2",
     "yargs": "^13.2.4"
