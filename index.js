@@ -119,7 +119,7 @@ class BotiumConnectorDialogflow {
         }
         resolve(this)
 
-        let nlp = {
+        const nlp = {
           intent: this._extractIntent(response),
           entities: this._extractEntities(response)
         }
@@ -180,7 +180,7 @@ class BotiumConnectorDialogflow {
                 mimeType: mime.lookup(item.image.imageUri) || 'application/unknown',
                 altText: item.image.accessibilityText
               },
-              buttons: item.info && item.info.key && [ { text: item.info.key } ]
+              buttons: item.info && item.info.key && [{ text: item.info.key }]
             }))
           } else if (fulfillmentMessage.carouselSelect) {
             botMsg.cards = fulfillmentMessage.carouselSelect.items.map(item => ({
@@ -191,12 +191,12 @@ class BotiumConnectorDialogflow {
                 mimeType: mime.lookup(item.image.imageUri) || 'application/unknown',
                 altText: item.image.accessibilityText
               },
-              buttons: item.info && item.info.key && [ { text: item.info.key } ]
+              buttons: item.info && item.info.key && [{ text: item.info.key }]
             }))
           } else if (fulfillmentMessage.suggestions) {
             botMsg.buttons = fulfillmentMessage.suggestions.suggestions && fulfillmentMessage.suggestions.suggestions.map((q) => ({ text: q.title }))
           } else if (fulfillmentMessage.linkOutSuggestion) {
-            botMsg.buttons = [ { text: fulfillmentMessage.linkOutSuggestion.destinationName, payload: fulfillmentMessage.linkOutSuggestion.uri } ]
+            botMsg.buttons = [{ text: fulfillmentMessage.linkOutSuggestion.destinationName, payload: fulfillmentMessage.linkOutSuggestion.uri }]
           } else {
             acceptedResponse = false
           }
