@@ -4,8 +4,7 @@
   "description": "",
   "main": "botiumFluent.js",
   "scripts": {
-    "test": "mocha spec",
-    "test-with-input-context": "cross-env BOTIUM_CONFIG=botium-contexts.json mocha spec"
+    "test": "mocha spec"
   },
   "keywords": [],
   "author": "",

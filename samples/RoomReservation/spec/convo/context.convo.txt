@@ -2,9 +2,15 @@ context
 
 #me
 hi
+UPDATE_CUSTOM SET_DIALOGFLOW_CONTEXT|mycontext1|7
+UPDATE_CUSTOM SET_DIALOGFLOW_CONTEXT|mycontext2|{"lifespan": 4, "parameters": { "test": "test1"}}
 
 #bot
 Enter "card" or "picture" or "buttons" or "adaptive" for rich message content
+JSON_PATH $.outputContexts[0].name|testsession
+JSON_PATH $.outputContexts[1].name|testbotium
+JSON_PATH $.outputContexts[2].name|mycontext1
+JSON_PATH $.outputContexts[3].name|mycontext2
 
 #me
 book a room

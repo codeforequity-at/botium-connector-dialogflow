@@ -69,55 +69,66 @@ class BotiumConnectorDialogflow {
     this.sessionClient = new dialogflow.SessionsClient(this.sessionOpts)
     this.conversationId = uuidV1()
     this.sessionPath = this.sessionClient.sessionPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID], this.conversationId)
-    this.queryParams = null
-
     this.contextClient = new dialogflow.ContextsClient(this.sessionOpts)
-    return Promise.all(this._getContextSuffixes().map((c) => this._createContext(c)))
+    this.queryParams = {
+      contexts: this._getContextSuffixes().map((c) => this._createInitialContext(c))
+    }
+    return Promise.resolve()
   }
 
   UserSays (msg) {
     debug('UserSays called')
     if (!this.sessionClient) return Promise.reject(new Error('not built'))
 
-    return new Promise((resolve, reject) => {
-      const request = {
-        session: this.sessionPath,
-        queryInput: {
-        }
+    const request = {
+      session: this.sessionPath,
+      queryInput: {
       }
-      if (this.caps[Capabilities.DIALOGFLOW_BUTTON_EVENTS] && msg.buttons && msg.buttons.length > 0 && (msg.buttons[0].text || msg.buttons[0].payload)) {
-        let payload = msg.buttons[0].payload || msg.buttons[0].text
-        try {
-          payload = JSON.parse(payload)
-          request.queryInput.event = Object.assign({}, { languageCode: this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE] }, payload)
-        } catch (err) {
-          request.queryInput.event = {
-            name: payload,
-            languageCode: this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE]
-          }
-        }
-      } else {
-        request.queryInput.text = {
-          text: msg.messageText,
+    }
+    if (this.caps[Capabilities.DIALOGFLOW_BUTTON_EVENTS] && msg.buttons && msg.buttons.length > 0 && (msg.buttons[0].text || msg.buttons[0].payload)) {
+      let payload = msg.buttons[0].payload || msg.buttons[0].text
+      try {
+        payload = JSON.parse(payload)
+        request.queryInput.event = Object.assign({}, { languageCode: this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE] }, payload)
+      } catch (err) {
+        request.queryInput.event = {
+          name: payload,
           languageCode: this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE]
         }
       }
-      request.queryParams = this.queryParams
-      debug(`dialogflow request: ${JSON.stringify(request, null, 2)}`)
+    } else {
+      request.queryInput.text = {
+        text: msg.messageText,
+        languageCode: this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE]
+      }
+    }
 
-      this.sessionClient.detectIntent(request).then((responses) => {
+    const customContexts = this._extractCustomContexts(msg)
+    customContexts.forEach(customContext => {
+      const index = this.queryParams.contexts.findIndex(c => c.name === customContext.name)
+      if (index >= 0) {
+        this.queryParams.contexts[index] = customContext
+      } else {
+        this.queryParams.contexts.push(customContext)
+      }
+    })
+    request.queryParams = this.queryParams
+    debug(`dialogflow request: ${JSON.stringify(request, null, 2)}`)
+
+    this.sessionClient.detectIntent(request)
+      .then((responses) => {
         const response = responses[0]
-        debug(`dialogflow response: ${JSON.stringify(response, null, 2)}`)
 
         response.queryResult.outputContexts.forEach(context => {
           context.parameters = structjson.jsonToStructProto(
             structjson.structProtoToJson(context.parameters)
           )
         })
+        debug(`dialogflow response: ${JSON.stringify(response, null, 2)}`)
+
         this.queryParams = {
           contexts: response.queryResult.outputContexts
         }
-        resolve(this)
 
         const nlp = {
           intent: this._extractIntent(response),
@@ -210,9 +221,8 @@ class BotiumConnectorDialogflow {
           setTimeout(() => this.queueBotSays({ sender: 'bot', sourceData: response.queryResult, nlp }), 0)
         }
       }).catch((err) => {
-        reject(new Error(`Cannot send message to dialogflow container: ${util.inspect(err)}`))
+        throw new Error(`Cannot send message to dialogflow container: ${util.inspect(err)}`)
       })
-    })
   }
 
   Stop () {
@@ -229,15 +239,13 @@ class BotiumConnectorDialogflow {
     return Promise.resolve()
   }
 
-  _createContext (contextSuffix) {
-    const contextPath = this.contextClient.contextPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID],
-      this.conversationId, this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_NAME + contextSuffix])
-    const context = { lifespanCount: parseInt(this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_LIFESPAN + contextSuffix]), name: contextPath }
-    if (this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_PARAMETERS + contextSuffix]) {
-      context.parameters = structjson.jsonToStructProto(this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_PARAMETERS + contextSuffix])
+  _createInitialContext (contextSuffix) {
+    return {
+      name: this.contextClient.contextPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID], this.conversationId, this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_NAME + contextSuffix]),
+      lifespanCount: parseInt(this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_LIFESPAN + contextSuffix]),
+      parameters: this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_PARAMETERS + contextSuffix] &&
+        structjson.jsonToStructProto(this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_PARAMETERS + contextSuffix])
     }
-    const request = { parent: this.sessionPath, context: context }
-    return this.contextClient.createContext(request)
   }
 
   _getContextSuffixes () {
@@ -247,6 +255,40 @@ class BotiumConnectorDialogflow {
       suffixes.push(key.substring(Capabilities.DIALOGFLOW_INPUT_CONTEXT_NAME.length))
     })
     return suffixes
+  }
+
+  _extractCustomContexts (msg) {
+    const result = []
+    if (msg.SET_DIALOGFLOW_CONTEXT) {
+      _.keys(msg.SET_DIALOGFLOW_CONTEXT).forEach(contextName => {
+        const val = msg.SET_DIALOGFLOW_CONTEXT[contextName]
+        if (_.isObject(val)) {
+          result.push(this._createCustomContext(contextName, val.lifespan, val.parameters))
+        } else {
+          result.push(this._createCustomContext(contextName, val))
+        }
+      })
+    }
+    return result
+  }
+
+  _createCustomContext (contextName, contextLifespan, contextParameters) {
+    const contextPath = this.contextClient.contextPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID],
+      this.conversationId, contextName)
+    try {
+      contextLifespan = parseInt(contextLifespan)
+    } catch (err) {
+      contextLifespan = 1
+    }
+
+    const context = {
+      name: contextPath,
+      lifespanCount: contextLifespan
+    }
+    if (contextParameters) {
+      context.parameters = structjson.jsonToStructProto(contextParameters)
+    }
+    return context
   }
 
   _extractIntent (response) {
