@@ -161,6 +161,15 @@ This Capability contains the values of the parameter. It is a JSON structure. Se
 
 Optional Capability.
 
+### DIALOGFLOW_ENABLE_KNOWLEDGEBASE
+_Default: false_
+
+This Capability enables support for [Dialogflow Knowledge Connectors](https://cloud.google.com/dialogflow/docs/knowledge-connectors). If this is set to _true_, then all knowledge bases connected to your Dialogflow agent are included in the queries. You can select individual knowledge bases by using a JSON array with the full knowledge base names, including the google project id and the knowledge base id:
+
+    ...
+    "DIALOGFLOW_ENABLE_KNOWLEDGEBASE": [ "projects/project-id/knowledgeBases/knowledge-base-id" ]
+    ...
+
 ## Open Issues and Restrictions
 * Account Linking is not supported (Consider using [Botium Connector for Google Assistant](https://github.com/codeforequity-at/botium-connector-google-assistant) if you want to test it)
 * Not [all](https://cloud.google.com/dialogflow-enterprise/docs/reference/rest/v2/projects.agent.intents#Message) dialogflow response is supported, just

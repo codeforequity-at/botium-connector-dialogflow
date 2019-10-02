@@ -19,13 +19,15 @@ const Capabilities = {
   DIALOGFLOW_INPUT_CONTEXT_PARAMETERS: 'DIALOGFLOW_INPUT_CONTEXT_PARAMETERS',
   DIALOGFLOW_OUTPUT_PLATFORM: 'DIALOGFLOW_OUTPUT_PLATFORM',
   DIALOGFLOW_FORCE_INTENT_RESOLUTION: 'DIALOGFLOW_FORCE_INTENT_RESOLUTION',
-  DIALOGFLOW_BUTTON_EVENTS: 'DIALOGFLOW_BUTTON_EVENTS'
+  DIALOGFLOW_BUTTON_EVENTS: 'DIALOGFLOW_BUTTON_EVENTS',
+  DIALOGFLOW_ENABLE_KNOWLEDGEBASE: 'DIALOGFLOW_ENABLE_KNOWLEDGEBASE'
 }
 
 const Defaults = {
   [Capabilities.DIALOGFLOW_LANGUAGE_CODE]: 'en-US',
   [Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]: true,
-  [Capabilities.DIALOGFLOW_BUTTON_EVENTS]: true
+  [Capabilities.DIALOGFLOW_BUTTON_EVENTS]: true,
+  [Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE]: false
 }
 
 class BotiumConnectorDialogflow {
@@ -36,12 +38,16 @@ class BotiumConnectorDialogflow {
 
   Validate () {
     debug('Validate called')
+    this.caps = Object.assign(Defaults, this.caps)
+
     if (!this.caps[Capabilities.DIALOGFLOW_PROJECT_ID]) throw new Error('DIALOGFLOW_PROJECT_ID capability required')
     if (!this.caps[Capabilities.DIALOGFLOW_CLIENT_EMAIL]) throw new Error('DIALOGFLOW_CLIENT_EMAIL capability required')
     if (!this.caps[Capabilities.DIALOGFLOW_PRIVATE_KEY]) throw new Error('DIALOGFLOW_PRIVATE_KEY capability required')
-    if (!this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE]) this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE] = Defaults[Capabilities.DIALOGFLOW_LANGUAGE_CODE]
-    if (!this.caps[Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]) this.caps[Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION] = Defaults[Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]
-    if (!this.caps[Capabilities.DIALOGFLOW_BUTTON_EVENTS]) this.caps[Capabilities.DIALOGFLOW_BUTTON_EVENTS] = Defaults[Capabilities.DIALOGFLOW_BUTTON_EVENTS]
+
+    if (!_.isArray(this.caps[Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE]) && !_.isBoolean(this.caps[Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE] && !_.isString(this.caps[Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE]))) throw new Error('DIALOGFLOW_ENABLE_KNOWLEDGEBASE capability has to be an array of knowledge base identifiers, or a boolean')
+    if (_.isString(this.caps[Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE])) {
+      this.caps[Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE] = this.caps[Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE] === 'true'
+    }
 
     const contextSuffixes = this._getContextSuffixes()
     contextSuffixes.forEach((contextSuffix) => {
@@ -63,13 +69,34 @@ class BotiumConnectorDialogflow {
     return Promise.resolve()
   }
 
-  Start () {
+  async Start () {
     debug('Start called')
 
-    this.sessionClient = new dialogflow.SessionsClient(this.sessionOpts)
     this.conversationId = uuidV1()
+    this.queryParams = {}
+
+    if (_.isBoolean(this.caps[Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE]) && this.caps[Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE]) {
+      this.kbClient = new dialogflow.v2beta1.KnowledgeBasesClient(Object.assign({}, this.sessionOpts, {
+        projectPath: this.caps[Capabilities.DIALOGFLOW_PROJECT_ID]
+      }))
+      const formattedParent = this.kbClient.projectPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID])
+      const [resources] = await this.kbClient.listKnowledgeBases({
+        parent: formattedParent
+      })
+      this.kbNames = resources && resources.map(r => r.name)
+    } else if (_.isArray(this.caps[Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE])) {
+      this.kbNames = this.caps[Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE]
+    }
+
+    if (this.kbNames && this.kbNames.length > 0) {
+      debug(`Using Dialogflow Knowledge Bases ${util.inspect(this.kbNames)}, switching to v2beta1 version of Dialogflow API`)
+      this.sessionClient = new dialogflow.v2beta1.SessionsClient(this.sessionOpts)
+      this.queryParams.knowledgeBaseNames = this.kbNames
+    } else {
+      this.sessionClient = new dialogflow.SessionsClient(this.sessionOpts)
+    }
+
     this.sessionPath = this.sessionClient.sessionPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID], this.conversationId)
-    this.queryParams = null
 
     this.contextClient = new dialogflow.ContextsClient(this.sessionOpts)
     return Promise.all(this._getContextSuffixes().map((c) => this._createContext(c)))
@@ -114,9 +141,9 @@ class BotiumConnectorDialogflow {
             structjson.structProtoToJson(context.parameters)
           )
         })
-        this.queryParams = {
+        this.queryParams = Object.assign(this.queryParams, {
           contexts: response.queryResult.outputContexts
-        }
+        })
         resolve(this)
 
         const nlp = {
