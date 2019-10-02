@@ -153,7 +153,7 @@ class BotiumConnectorDialogflow {
           )
         })
         debug(`dialogflow response: ${JSON.stringify(response, null, 2)}`)
-        
+
         this.queryParams = Object.assign(this.queryParams, {
           contexts: response.queryResult.outputContexts
         })
