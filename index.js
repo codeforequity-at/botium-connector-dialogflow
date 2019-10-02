@@ -143,7 +143,7 @@ class BotiumConnectorDialogflow {
     request.queryParams = this.queryParams
     debug(`dialogflow request: ${JSON.stringify(request, null, 2)}`)
 
-    this.sessionClient.detectIntent(request)
+    return this.sessionClient.detectIntent(request)
       .then((responses) => {
         const response = responses[0]
 
