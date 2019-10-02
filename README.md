@@ -94,6 +94,33 @@ For getting help on the available CLI options and switches, run:
 
     > botium-connector-dialogflow-cli dialogflowimport --help
 
+## Dialogflow Context Handling
+
+When using BotiumScript, you can do assertions on and manipulation of the [Dialogflow context variables](https://cloud.google.com/dialogflow/docs/contexts-overview).
+
+### Asserting context variables
+
+For asserting existance of context variables, you can use the [JSON_PATH asserter](https://botium.atlassian.net/wiki/spaces/BOTIUM/pages/59113473/JSONPath+Asserter):
+
+    #bot
+    JSON_PATH $.outputContexts[0].name|testsession
+
+With similar asserter usage, you can check for lifespan and context parameters as well.
+
+### Adding context variables
+
+For adding a context variable, you have to use the [UPDATE_CUSTOM logic hook](https://botium.atlassian.net/wiki/spaces/BOTIUM/pages/48660497/Integrated+Logic+Hooks). This example will set two context variables, one with some parameters:
+
+    #me
+    heyo
+    UPDATE_CUSTOM SET_DIALOGFLOW_CONTEXT|mycontext1|7
+    UPDATE_CUSTOM SET_DIALOGFLOW_CONTEXT|mycontext2|{"lifespan": 4, "parameters": { "test": "test1"}}
+
+The parameters are:
+1. SET_DIALOGFLOW_CONTEXT
+2. The name of the context variable (if already existing, it will be overwritten)
+3. The lifespan of the context variable (if scalar value), or the lifespan and the context parameters (if JSON formatted)
+
 ## Supported Capabilities
 
 Set the capability __CONTAINERMODE__ to __dialogflow__ to activate this connector.
@@ -153,7 +180,7 @@ See also the [Sample botium.json](./samples/RoomReservation/botium-contexts.json
 
 The number of queries this parameter will remain active after being invoked.
 
-Mandatory Capability. 
+Mandatory Capability.
 
 ### DIALOGFLOW_INPUT_CONTEXT_PARAMETERS(_X)
 
