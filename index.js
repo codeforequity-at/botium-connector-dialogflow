@@ -140,7 +140,13 @@ class BotiumConnectorDialogflow {
         this.queryParams.contexts.push(customContext)
       }
     })
-    request.queryParams = this.queryParams
+
+    const mergeQueryParams = {}
+    if (msg.SET_DIALOGFLOW_QUERYPARAMS) {
+      Object.assign(mergeQueryParams, msg.SET_DIALOGFLOW_QUERYPARAMS)
+    }
+
+    request.queryParams = Object.assign({}, this.queryParams, mergeQueryParams)
     debug(`dialogflow request: ${JSON.stringify(request, null, 2)}`)
 
     return this.sessionClient.detectIntent(request)
