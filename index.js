@@ -20,14 +20,16 @@ const Capabilities = {
   DIALOGFLOW_OUTPUT_PLATFORM: 'DIALOGFLOW_OUTPUT_PLATFORM',
   DIALOGFLOW_FORCE_INTENT_RESOLUTION: 'DIALOGFLOW_FORCE_INTENT_RESOLUTION',
   DIALOGFLOW_BUTTON_EVENTS: 'DIALOGFLOW_BUTTON_EVENTS',
-  DIALOGFLOW_ENABLE_KNOWLEDGEBASE: 'DIALOGFLOW_ENABLE_KNOWLEDGEBASE'
+  DIALOGFLOW_ENABLE_KNOWLEDGEBASE: 'DIALOGFLOW_ENABLE_KNOWLEDGEBASE',
+  DIALOGFLOW_FALLBACK_INTENTS: 'DIALOGFLOW_FALLBACK_INTENTS'
 }
 
 const Defaults = {
   [Capabilities.DIALOGFLOW_LANGUAGE_CODE]: 'en-US',
   [Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]: true,
   [Capabilities.DIALOGFLOW_BUTTON_EVENTS]: true,
-  [Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE]: false
+  [Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE]: false,
+  [Capabilities.DIALOGFLOW_FALLBACK_INTENTS]: [`Default Fallback Intent`]
 }
 
 class BotiumConnectorDialogflow {
@@ -323,7 +325,8 @@ class BotiumConnectorDialogflow {
     if (response.queryResult.intent) {
       return {
         name: response.queryResult.intent.displayName,
-        confidence: response.queryResult.intentDetectionConfidence
+        confidence: response.queryResult.intentDetectionConfidence,
+        incomprehension: this.caps.DIALOGFLOW_FALLBACK_INTENTS.includes(response.queryResult.intent.displayName) ? true : undefined
       }
     }
     return {}
