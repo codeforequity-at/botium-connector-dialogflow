@@ -29,7 +29,7 @@ const Defaults = {
   [Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]: true,
   [Capabilities.DIALOGFLOW_BUTTON_EVENTS]: true,
   [Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE]: false,
-  [Capabilities.DIALOGFLOW_FALLBACK_INTENTS]: [`Default Fallback Intent`]
+  [Capabilities.DIALOGFLOW_FALLBACK_INTENTS]: ['Default Fallback Intent']
 }
 
 class BotiumConnectorDialogflow {
