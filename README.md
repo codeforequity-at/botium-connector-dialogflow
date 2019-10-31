@@ -205,6 +205,12 @@ This Capability enables support for [Dialogflow Knowledge Connectors](https://cl
     "DIALOGFLOW_ENABLE_KNOWLEDGEBASE": [ "projects/project-id/knowledgeBases/knowledge-base-id" ]
     ...
 
+### DIALOGFLOW_FALLBACK_INTENTS
+_Default: ['Default Fallback Intent']_
+
+As default the not recognized utterance will be categorized as _Default Fallback Intent_ by Dialogflow. 
+If you change this behavior, you can inform connector about it. Used just for analyzation.   
+ 
 ## Open Issues and Restrictions
 * Account Linking is not supported (Consider using [Botium Connector for Google Assistant](https://github.com/codeforequity-at/botium-connector-google-assistant) if you want to test it)
 * Not [all](https://cloud.google.com/dialogflow-enterprise/docs/reference/rest/v2/projects.agent.intents#Message) dialogflow response is supported, just
