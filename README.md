@@ -121,6 +121,14 @@ The parameters are:
 2. The name of the context variable (if already existing, it will be overwritten)
 3. The lifespan of the context variable (if scalar value), or the lifespan and the context parameters (if JSON formatted)
 
+## Dialogflow Query Parameters
+
+When using BotiumScript, you can do manipulation of the [Dialogflow query parameters](https://cloud.google.com/dialogflow/docs/reference/rest/v2beta1/QueryParameters).You have to use the [UPDATE_CUSTOM logic hook](https://botium.atlassian.net/wiki/spaces/BOTIUM/pages/48660497/Integrated+Logic+Hooks). This example will add a _payload_ field with some JSON content in the query parameters:
+
+    #me
+    heyo
+    UPDATE_CUSTOM SET_DIALOGFLOW_QUERYPARAMS|payload|{"key": "value"}
+
 ## Supported Capabilities
 
 Set the capability __CONTAINERMODE__ to __dialogflow__ to activate this connector.
