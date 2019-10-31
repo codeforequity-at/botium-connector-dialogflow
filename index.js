@@ -344,10 +344,14 @@ class BotiumConnectorDialogflow {
 
   _extractEntityValues (key, field) {
     if (['numberValue', 'stringValue', 'boolValue', 'nullValue'].indexOf(field.kind) >= 0) {
-      return [{
-        name: key,
-        value: `${field[field.kind]}`
-      }]
+      const value = field[field.kind]
+      if (!_.isNil(value) && (!_.isString(value) || value.length)) {
+        return [{
+          name: key,
+          value: `${field[field.kind]}`
+        }]
+      }
+      return []
     }
     if (field.kind === 'structValue') {
       return this._extractEntitiesFromFields(key, field.structValue.fields)
@@ -358,10 +362,7 @@ class BotiumConnectorDialogflow {
           return entities.concat(this._extractEntityValues(`${key}.${i}`, lv))
         }, [])
       } else {
-        return [{
-          name: key,
-          value: ''
-        }]
+        return []
       }
     }
     debug(`Unsupported entity kind ${field.kind}, skipping entity.`)

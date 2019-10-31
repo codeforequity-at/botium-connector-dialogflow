@@ -6,7 +6,6 @@ transfer money
 #bot
 Sure. Transfer from which account?
 INTENT transfer.money
-ENTITIES account-from|account-to|amount
 
 #me
 savings
@@ -14,8 +13,8 @@ savings
 #bot
 To which account?
 INTENT transfer.money
-ENTITIES account-from.0|account-to|amount
-ENTITY_VALUES savings account||
+ENTITIES account-from.0
+ENTITY_VALUES savings account
 
 #me
 checking
@@ -23,8 +22,8 @@ checking
 #bot
 And, how much do you want to transfer?
 INTENT transfer.money
-ENTITIES account-from.0|account-to|amount
-ENTITY_VALUES savings account|checking account|
+ENTITIES account-from.0|account-to
+ENTITY_VALUES savings account|checking account
 
 #me
 10 USD
