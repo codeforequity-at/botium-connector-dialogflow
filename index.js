@@ -6,6 +6,7 @@ const _ = require('lodash')
 const debug = require('debug')('botium-connector-dialogflow')
 
 const { importDialogflowIntents, importDialogflowConversations } = require('./src/dialogflowintents')
+const { extractIntentUtterances, trainIntentUtterances, cleanupIntentUtterances } = require('./src/nlp')
 
 const structjson = require('./structjson')
 
@@ -40,7 +41,7 @@ class BotiumConnectorDialogflow {
 
   Validate () {
     debug('Validate called')
-    this.caps = Object.assign(Defaults, this.caps)
+    this.caps = Object.assign({}, Defaults, this.caps)
 
     if (!this.caps[Capabilities.DIALOGFLOW_PROJECT_ID]) throw new Error('DIALOGFLOW_PROJECT_ID capability required')
     if (!this.caps[Capabilities.DIALOGFLOW_CLIENT_EMAIL]) throw new Error('DIALOGFLOW_CLIENT_EMAIL capability required')
@@ -257,7 +258,8 @@ class BotiumConnectorDialogflow {
           setTimeout(() => this.queueBotSays({ sender: 'bot', sourceData: response.queryResult, nlp }), 0)
         }
       }).catch((err) => {
-        throw new Error(`Cannot send message to dialogflow container: ${util.inspect(err)}`)
+        debug(err)
+        throw new Error(`Cannot send message to dialogflow container: ${err.message}`)
       })
   }
 
@@ -385,5 +387,10 @@ module.exports = {
   Utils: {
     importDialogflowIntents,
     importDialogflowConversations
+  },
+  NLP: {
+    ExtractIntentUtterances: extractIntentUtterances,
+    TrainIntentUtterances: trainIntentUtterances,
+    CleanupIntentUtterances: cleanupIntentUtterances
   }
 }

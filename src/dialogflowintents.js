@@ -210,12 +210,12 @@ const importDialogflow = async (agentzip, caps, importFunction) => {
   if (!agentzip) {
     try {
       const agentsClient = new dialogflow.AgentsClient(botiumContext.container.pluginInstance.sessionOpts)
-      const projectPath = agentsClient.projectPath(botiumContext.container.caps['DIALOGFLOW_PROJECT_ID'])
+      const projectPath = agentsClient.projectPath(botiumContext.container.caps.DIALOGFLOW_PROJECT_ID)
 
       const allResponses = await agentsClient.exportAgent({ parent: projectPath })
       const responses = await allResponses[0].promise()
       try {
-        let buf = Buffer.from(responses[0].agentContent, 'base64')
+        const buf = Buffer.from(responses[0].agentContent, 'base64')
         Object.assign(botiumContext, loadAgentZip(buf))
       } catch (err) {
         throw new Error(`Dialogflow agent unpack failed: ${util.inspect(err)}`)
@@ -290,7 +290,7 @@ module.exports = {
     builder: (yargs) => {
       yargs.positional('source', {
         describe: 'Specify the source of the conversations for the configured chatbot',
-        choices: [ 'dialogflow-intents', 'dialogflow-conversations' ]
+        choices: ['dialogflow-intents', 'dialogflow-conversations']
       })
       yargs.option('agentzip', {
         describe: 'Path to the exported Dialogflow agent zip file. If not given, it will be downloaded (with connection settings from botium.json).'
