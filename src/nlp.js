@@ -8,6 +8,8 @@ const debug = require('debug')('botium-connector-dialogflow-nlp')
 
 const { loadAgentZip } = require('./helpers')
 
+const timeout = ms => new Promise(resolve => setTimeout(resolve, ms))
+
 const getCaps = (caps) => {
   const result = Object.assign({}, caps || {})
   result.CONTAINERMODE = path.resolve(__dirname, '..', 'index.js')
@@ -97,12 +99,21 @@ const trainIntentUtterances = async ({ caps }, intents, { origAgentInfo }) => {
 
     const newAgentData = {
       parent: projectPathNLP,
-      displayName: `${origAgentInfo.displayName}-TrainingCopy-${randomize('Aa0', 5)}`,
-      defaultLanguageCode: origAgentInfo.defaultLanguageCode,
-      timeZone: origAgentInfo.timeZone,
-      enableLogging: true,
-      matchMode: origAgentInfo.matchMode,
-      classificationThreshold: origAgentInfo.classificationThreshold
+      enableLogging: true
+    }
+    if (origAgentInfo) {
+      Object.assign(newAgentData, {
+        displayName: `${origAgentInfo.displayName}-BotiumTrainingCopy-${randomize('Aa0', 5)}`,
+        defaultLanguageCode: origAgentInfo.defaultLanguageCode,
+        timeZone: origAgentInfo.timeZone,
+        matchMode: origAgentInfo.matchMode,
+        classificationThreshold: origAgentInfo.classificationThreshold
+      })
+    } else {
+      Object.assign(newAgentData, {
+        displayName: `BotiumTrainingCopy-${randomize('Aa0', 5)}`,
+        defaultLanguageCode: nlpContainer.pluginInstance.caps.DIALOGFLOW_LANGUAGE_CODE
+      })
     }
 
     const createAgentResponses = await agentsClient.setAgent({ agent: newAgentData })
@@ -140,6 +151,29 @@ const trainIntentUtterances = async ({ caps }, intents, { origAgentInfo }) => {
     await trainResponses[0].promise()
 
     debug(`Dialogflow agent ready: ${newAgent.parent}/${newAgent.displayName}`)
+
+    const sessionClient = new dialogflow.SessionsClient(nlpContainer.pluginInstance.sessionOpts)
+    const sessionPath = sessionClient.sessionPath(nlpContainer.pluginInstance.caps.DIALOGFLOW_NLP_PROJECT_ID, randomize('Aa0', 20))
+    const pingRequest = {
+      session: sessionPath,
+      queryInput: {
+        text: {
+          text: 'hello',
+          languageCode: nlpContainer.pluginInstance.caps.DIALOGFLOW_LANGUAGE_CODE
+        }
+      }
+    }
+    while (true) {
+      try {
+        await sessionClient.detectIntent(pingRequest)
+        debug(`Dialogflow agent ${newAgent.parent}/${newAgent.displayName} returned response on pingRequest, continue.`)
+        break
+      } catch (err) {
+        debug(`Dialogflow agent ${newAgent.parent}/${newAgent.displayName} failed on pingRequest, waiting ... (${err.message})`)
+        await timeout(2000)
+      }
+    }
+
     return {
       caps: Object.assign({}, nlpContainer.pluginInstance.caps),
       origAgentInfo,
