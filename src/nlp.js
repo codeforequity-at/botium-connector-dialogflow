@@ -185,21 +185,6 @@ const trainIntentUtterances = async ({ caps }, intents, { origAgentInfo }) => {
 }
 
 const cleanupIntentUtterances = async ({ caps }, { caps: trainCaps, origAgentInfo, tempAgent }) => {
-  const nlpDriver = new botium.BotDriver(getCaps(Object.assign(caps || {}, trainCaps || {})))
-  const nlpContainer = await nlpDriver.Build()
-
-  try {
-    const agentsClient = new dialogflow.AgentsClient(nlpContainer.pluginInstance.sessionOpts)
-
-    try {
-      await agentsClient.deleteAgent({ parent: tempAgent.parent })
-      debug(`Dialogflow agent deleted: ${tempAgent.parent}/${tempAgent.displayName}`)
-    } catch (err) {
-      throw new Error(`Failed to delete Dialogflow agent: ${err.message}`)
-    }
-  } finally {
-    if (nlpContainer) await nlpContainer.Clean()
-  }
 }
 
 module.exports = {

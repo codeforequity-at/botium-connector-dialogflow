@@ -210,7 +210,23 @@ _Default: ['Default Fallback Intent']_
 
 As default the not recognized utterance will be categorized as _Default Fallback Intent_ by Dialogflow. 
 If you change this behavior, you can inform connector about it. Used just for analyzation.   
- 
+
+## Additional Capabilities for NLP Analytics
+
+The recommendation is to separate the Dialogflow agent you are using for NLP analytics from the one used for training your chatbot. There is a separate set of capabilities for connecting to an additional Dialogflow agent.
+
+### DIALOGFLOW_NLP_PROJECT_ID
+
+Google project id.
+
+### DIALOGFLOW_NLP_CLIENT_EMAIL
+
+Google client email.
+
+### DIALOGFLOW_NLP_PRIVATE_KEY
+
+Google private key.
+
 ## Open Issues and Restrictions
 * Account Linking is not supported (Consider using [Botium Connector for Google Assistant](https://github.com/codeforequity-at/botium-connector-google-assistant) if you want to test it)
 * Not [all](https://cloud.google.com/dialogflow-enterprise/docs/reference/rest/v2/projects.agent.intents#Message) dialogflow response is supported, just
