@@ -1,0 +1,25 @@
+follow up intent
+
+#me
+Hello
+
+#bot
+Good day! I have a lot coffee and snacks. What can i get you to drink?
+
+#me
+I want to pick-up a small latte
+
+#bot
+You've ordered small Latte and you want a pick-up. Correct?
+
+#me
+yes
+
+#bot
+Will you use the same card?
+
+#me
+yes
+
+#bot
+All set, enjoy!

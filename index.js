@@ -135,6 +135,7 @@ class BotiumConnectorDialogflow {
     }
 
     const customContexts = this._extractCustomContexts(msg)
+    // this.queryParams.contexts may contain a value just the first time.
     customContexts.forEach(customContext => {
       const index = this.queryParams.contexts.findIndex(c => c.name === customContext.name)
       if (index >= 0) {
@@ -154,6 +155,7 @@ class BotiumConnectorDialogflow {
 
     return this.sessionClient.detectIntent(request)
       .then((responses) => {
+        this.queryParams.contexts = []
         const response = responses[0]
 
         response.queryResult.outputContexts.forEach(context => {
@@ -162,10 +164,6 @@ class BotiumConnectorDialogflow {
           )
         })
         debug(`dialogflow response: ${JSON.stringify(response, null, 2)}`)
-
-        this.queryParams = Object.assign(this.queryParams, {
-          contexts: response.queryResult.outputContexts
-        })
 
         const nlp = {
           intent: this._extractIntent(response),

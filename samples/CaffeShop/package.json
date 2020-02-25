@@ -1,0 +1,25 @@
+{
+  "name": "samples",
+  "version": "1.0.0",
+  "description": "",
+  "main": "botiumFluent.js",
+  "scripts": {
+    "test": "mocha spec"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "botium": {
+    "convodirs": [
+      "spec\\convo"
+    ],
+    "expandConvos": true,
+    "expandUtterancesToConvos": false
+  },
+  "devDependencies": {
+    "botium-bindings": "latest",
+    "botium-connector-dialogflow": "../..",
+    "cross-env": "^5.2.0",
+    "mocha": "latest"
+  }
+}
