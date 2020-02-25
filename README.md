@@ -18,7 +18,7 @@ It can be used as any other Botium connector with all Botium Stack components:
   * [Botium Bindings](https://github.com/codeforequity-at/botium-bindings/)
   * [Botium Box](https://www.botium.at)
 
-This connector processes info about NLP. So Intent/Entity asserters can be used.
+Extracts Button, Media, Card, and NLP information (intent, entities) from Chatbot API response. Accordingly it is possible to use a corresponding [Botium Asserter](https://botium.atlassian.net/wiki/spaces/BOTIUM/pages/2293815/Botium+Asserters).
 
 ## Requirements
 
