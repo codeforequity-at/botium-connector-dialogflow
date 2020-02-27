@@ -177,7 +177,7 @@ class BotiumConnectorDialogflow {
     }
 
     request.queryParams = Object.assign({}, this.queryParams, mergeQueryParams)
-    debug(`dialogflow request: ${JSON.stringify(_.omit(request, [ 'inputAudio' ]), null, 2)}`)
+    debug(`dialogflow request: ${JSON.stringify(_.omit(request, ['inputAudio']), null, 2)}`)
 
     return this.sessionClient.detectIntent(request)
       .then((responses) => {
@@ -198,6 +198,9 @@ class BotiumConnectorDialogflow {
           intent: this._extractIntent(response),
           entities: this._extractEntities(response)
         }
+        const audioAttachment = this._getAudioOutput(response)
+        const attachments = audioAttachment ? [audioAttachment] : []
+
         let fulfillmentMessages = response.queryResult.fulfillmentMessages.filter(f =>
           (this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM] && f.platform === this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM]) ||
           (!this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM] && (f.platform === 'PLATFORM_UNSPECIFIED' || !f.platform))
@@ -212,7 +215,7 @@ class BotiumConnectorDialogflow {
         let forceIntentResolution = this.caps[Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]
         fulfillmentMessages.forEach((fulfillmentMessage) => {
           let acceptedResponse = true
-          const botMsg = { sender: 'bot', sourceData: response.queryResult, nlp }
+          const botMsg = { sender: 'bot', sourceData: response.queryResult, nlp, attachments }
           if (fulfillmentMessage.text) {
             botMsg.messageText = fulfillmentMessage.text.text[0]
           } else if (fulfillmentMessage.simpleResponses) {
@@ -276,9 +279,6 @@ class BotiumConnectorDialogflow {
             acceptedResponse = false
           }
 
-          const audioAttachment = this._getAudioOutput(response)
-          botMsg.attachments = audioAttachment ? [ audioAttachment ] : []
-
           if (acceptedResponse) {
             setTimeout(() => this.queueBotSays(botMsg), 0)
             forceIntentResolution = false
@@ -286,10 +286,7 @@ class BotiumConnectorDialogflow {
         })
 
         if (forceIntentResolution) {
-          const audioAttachment = this._getAudioOutput(response)
-          botMsg.attachments = audioAttachment ? [ audioAttachment ] : []
-
-          setTimeout(() => this.queueBotSays({ sender: 'bot', sourceData: response.queryResult, nlp }), 0)
+          setTimeout(() => this.queueBotSays({ sender: 'bot', sourceData: response.queryResult, nlp, attachments }), 0)
         }
       }).catch((err) => {
         debug(err)

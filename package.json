@@ -12,7 +12,8 @@
   },
   "scripts": {
     "build": "npm run eslint && rollup -c",
-    "eslint": "eslint index.js"
+    "eslint": "eslint index.js src/**.js",
+    "eslint-fix": "eslint --fix index.js src/**.js"
   },
   "repository": {
     "type": "git",
