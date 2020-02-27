@@ -45,7 +45,7 @@
     "@babel/runtime": "^7.7.4",
     "adm-zip": "^0.4.13",
     "debug": "^4.1.1",
-    "dialogflow": "^0.14.1",
+    "dialogflow": "^1.2.0",
     "lodash": "^4.17.15",
     "mime-types": "^2.1.25",
     "mkdirp": "^0.5.1",
