@@ -22,7 +22,9 @@ const Capabilities = {
   DIALOGFLOW_FORCE_INTENT_RESOLUTION: 'DIALOGFLOW_FORCE_INTENT_RESOLUTION',
   DIALOGFLOW_BUTTON_EVENTS: 'DIALOGFLOW_BUTTON_EVENTS',
   DIALOGFLOW_ENABLE_KNOWLEDGEBASE: 'DIALOGFLOW_ENABLE_KNOWLEDGEBASE',
-  DIALOGFLOW_FALLBACK_INTENTS: 'DIALOGFLOW_FALLBACK_INTENTS'
+  DIALOGFLOW_FALLBACK_INTENTS: 'DIALOGFLOW_FALLBACK_INTENTS',
+  DIALOGFLOW_AUDIOINPUT_ENCODING: 'DIALOGFLOW_AUDIOINPUT_ENCODING',
+  DIALOGFLOW_AUDIOINPUT_SAMPLERATEHERTZ: 'DIALOGFLOW_AUDIOINPUT_SAMPLERATEHERTZ'
 }
 
 const Defaults = {
@@ -30,7 +32,9 @@ const Defaults = {
   [Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]: true,
   [Capabilities.DIALOGFLOW_BUTTON_EVENTS]: true,
   [Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE]: false,
-  [Capabilities.DIALOGFLOW_FALLBACK_INTENTS]: ['Default Fallback Intent']
+  [Capabilities.DIALOGFLOW_FALLBACK_INTENTS]: ['Default Fallback Intent'],
+  [Capabilities.DIALOGFLOW_AUDIOINPUT_ENCODING]: 'AUDIO_ENCODING_LINEAR_16',
+  [Capabilities.DIALOGFLOW_AUDIOINPUT_SAMPLERATEHERTZ]: 16000
 }
 
 class BotiumConnectorDialogflow {
@@ -127,6 +131,29 @@ class BotiumConnectorDialogflow {
           languageCode: this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE]
         }
       }
+    } else if (msg.media && msg.media.length > 0) {
+      const media = msg.media[0]
+      if (!media.buffer) {
+        return Promise.reject(new Error(`Media attachment ${media.mediaUri} not downloaded`))
+      }
+      if (!media.mimeType || !media.mimeType.startsWith('audio')) {
+        return Promise.reject(new Error(`Media attachment ${media.mediaUri} mime type ${media.mimeType || '<empty>'} not supported (audio only)`))
+      }
+      request.queryInput.audioConfig = {
+        audioEncoding: this.caps[Capabilities.DIALOGFLOW_AUDIOINPUT_ENCODING],
+        sampleRateHertz: this.caps[Capabilities.DIALOGFLOW_AUDIOINPUT_SAMPLERATEHERTZ],
+        languageCode: this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE]
+      }
+      request.inputAudio = media.buffer
+
+      if (!msg.attachments) {
+        msg.attachments = []
+      }
+      msg.attachments.push({
+        name: media.mediaUri,
+        mimeType: media.mimeType,
+        base64: media.buffer.toString('base64')
+      })
     } else {
       request.queryInput.text = {
         text: msg.messageText,
@@ -151,7 +178,7 @@ class BotiumConnectorDialogflow {
     }
 
     request.queryParams = Object.assign({}, this.queryParams, mergeQueryParams)
-    debug(`dialogflow request: ${JSON.stringify(request, null, 2)}`)
+    debug(`dialogflow request: ${JSON.stringify(_.omit(request, ['inputAudio']), null, 2)}`)
 
     return this.sessionClient.detectIntent(request)
       .then((responses) => {
@@ -169,6 +196,9 @@ class BotiumConnectorDialogflow {
           intent: this._extractIntent(response),
           entities: this._extractEntities(response)
         }
+        const audioAttachment = this._getAudioOutput(response)
+        const attachments = audioAttachment ? [audioAttachment] : []
+
         let fulfillmentMessages = response.queryResult.fulfillmentMessages.filter(f =>
           (this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM] && f.platform === this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM]) ||
           (!this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM] && (f.platform === 'PLATFORM_UNSPECIFIED' || !f.platform))
@@ -183,7 +213,7 @@ class BotiumConnectorDialogflow {
         let forceIntentResolution = this.caps[Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]
         fulfillmentMessages.forEach((fulfillmentMessage) => {
           let acceptedResponse = true
-          const botMsg = { sender: 'bot', sourceData: response.queryResult, nlp }
+          const botMsg = { sender: 'bot', sourceData: response.queryResult, nlp, attachments }
           if (fulfillmentMessage.text) {
             botMsg.messageText = fulfillmentMessage.text.text[0]
           } else if (fulfillmentMessage.simpleResponses) {
@@ -246,6 +276,7 @@ class BotiumConnectorDialogflow {
           } else {
             acceptedResponse = false
           }
+
           if (acceptedResponse) {
             setTimeout(() => this.queueBotSays(botMsg), 0)
             forceIntentResolution = false
@@ -253,7 +284,7 @@ class BotiumConnectorDialogflow {
         })
 
         if (forceIntentResolution) {
-          setTimeout(() => this.queueBotSays({ sender: 'bot', sourceData: response.queryResult, nlp }), 0)
+          setTimeout(() => this.queueBotSays({ sender: 'bot', sourceData: response.queryResult, nlp, attachments }), 0)
         }
       }).catch((err) => {
         debug(err)
@@ -273,6 +304,27 @@ class BotiumConnectorDialogflow {
     debug('Clean called')
     this.sessionOpts = null
     return Promise.resolve()
+  }
+
+  _getAudioOutput (response) {
+    if (response.outputAudio && response.outputAudioConfig) {
+      const attachment = {
+      }
+      if (response.outputAudioConfig.audioEncoding === 'OUTPUT_AUDIO_ENCODING_LINEAR_16') {
+        attachment.name = 'output.wav'
+        attachment.mimeType = 'audio/wav'
+      } else if (response.outputAudioConfig.audioEncoding === 'OUTPUT_AUDIO_ENCODING_MP3') {
+        attachment.name = 'output.mp3'
+        attachment.mimeType = 'audio/mpeg3'
+      } else if (response.outputAudioConfig.audioEncoding === 'OUTPUT_AUDIO_ENCODING_OGG_OPUS') {
+        attachment.name = 'output.ogg'
+        attachment.mimeType = 'audio/ogg'
+      }
+      if (attachment.name) {
+        attachment.base64 = response.outputAudio.toString('base64')
+        return attachment
+      }
+    }
   }
 
   _createInitialContext (contextSuffix) {

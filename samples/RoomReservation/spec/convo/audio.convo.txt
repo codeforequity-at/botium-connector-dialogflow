@@ -1,0 +1,7 @@
+audio
+
+#me
+MEDIA bookroom.wav
+
+#bot
+BUTTONS Let's book a room.

@@ -13,7 +13,16 @@
       "DIALOGFLOW_INPUT_CONTEXT_LIFESPAN_0": 5,
       "DIALOGFLOW_INPUT_CONTEXT_PARAMETERS_0": {
         "IsBotiumTest": true
-      }
+      },
+      "USER_INPUTS": [
+        {
+          "ref": "MEDIA",
+          "src": "MediaInput",
+          "args": {
+            "downloadMedia": true
+          }
+        }
+      ]    
     }
   }
 }
