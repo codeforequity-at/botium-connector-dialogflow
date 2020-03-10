@@ -80,13 +80,13 @@ Botium setup is ready, you can begin to write your [BotiumScript](https://github
 
 This connector provides a CLI interface for importing convos and utterances from your Dialogflow agent and convert it to BotiumScript.
 
-* Intents and Utterances are converted to BotiumScript utterances files (using the _dialogflow-intents_ option)
-* Conversations are reverse engineered and converted to BotiumScript convo files (using the _dialogflow-conversations_ option)
+* Intents and Utterances are converted to BotiumScript utterances files (using the _--buildconvos_ option)
+* Conversations are reverse engineered and converted to BotiumScript convo files (using the _--buildmultistepconvos_ option)
 
 You can either run the CLI with *[botium-cli](https://github.com/codeforequity-at/botium-cli) (recommended - it is integrated there)*, or directly from this connector (see samples/assistant directory for some examples):
 
-    > botium-connector-dialogflow-cli dialogflowimport dialogflow-intents
-    > botium-connector-dialogflow-cli dialogflowimport dialogflow-conversations
+    > botium-connector-dialogflow-cli import --buildconvos
+    > botium-connector-dialogflow-cli import --buildmultistepconvos
 
 _Please note that you will have to install the npm packages botium-core and botium-connector-echo manually before using this CLI_
 
