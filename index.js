@@ -5,7 +5,7 @@ const dialogflow = require('dialogflow')
 const _ = require('lodash')
 const debug = require('debug')('botium-connector-dialogflow')
 
-const { importDialogflowIntents, importDialogflowConversations } = require('./src/dialogflowintents')
+const { importHandler, importArgs } = require('./src/dialogflowintents')
 const { extractIntentUtterances, trainIntentUtterances, cleanupIntentUtterances } = require('./src/nlp')
 
 const structjson = require('./structjson')
@@ -434,9 +434,9 @@ class BotiumConnectorDialogflow {
 module.exports = {
   PluginVersion: 1,
   PluginClass: BotiumConnectorDialogflow,
-  Utils: {
-    importDialogflowIntents,
-    importDialogflowConversations
+  Import: {
+    Handler: importHandler,
+    Args: importArgs
   },
   NLP: {
     ExtractIntentUtterances: extractIntentUtterances,
