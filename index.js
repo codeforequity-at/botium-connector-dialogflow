@@ -179,6 +179,7 @@ class BotiumConnectorDialogflow {
 
     request.queryParams = Object.assign({}, this.queryParams, mergeQueryParams)
     debug(`dialogflow request: ${JSON.stringify(_.omit(request, ['inputAudio']), null, 2)}`)
+    msg.sourceData = request
 
     return this.sessionClient.detectIntent(request)
       .then((responses) => {
@@ -190,7 +191,7 @@ class BotiumConnectorDialogflow {
             structjson.structProtoToJson(context.parameters)
           )
         })
-        debug(`dialogflow response: ${JSON.stringify(response, null, 2)}`)
+        debug(`dialogflow response: ${JSON.stringify(_.omit(response, ['outputAudio']), null, 2)}`)
 
         const nlp = {
           intent: this._extractIntent(response),
