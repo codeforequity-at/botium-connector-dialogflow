@@ -48,8 +48,7 @@ class BotiumConnectorDialogflow {
     this.caps = Object.assign({}, Defaults, this.caps)
 
     if (!this.caps[Capabilities.DIALOGFLOW_PROJECT_ID]) throw new Error('DIALOGFLOW_PROJECT_ID capability required')
-    if (!this.caps[Capabilities.DIALOGFLOW_CLIENT_EMAIL]) throw new Error('DIALOGFLOW_CLIENT_EMAIL capability required')
-    if (!this.caps[Capabilities.DIALOGFLOW_PRIVATE_KEY]) throw new Error('DIALOGFLOW_PRIVATE_KEY capability required')
+    if (!!this.caps[Capabilities.DIALOGFLOW_CLIENT_EMAIL] !== !!this.caps[Capabilities.DIALOGFLOW_PRIVATE_KEY]) throw new Error('DIALOGFLOW_CLIENT_EMAIL and DIALOGFLOW_PRIVATE_KEY capabilities both or none required')
 
     if (!_.isArray(this.caps[Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE]) && !_.isBoolean(this.caps[Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE] && !_.isString(this.caps[Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE]))) throw new Error('DIALOGFLOW_ENABLE_KNOWLEDGEBASE capability has to be an array of knowledge base identifiers, or a boolean')
     if (_.isString(this.caps[Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE])) {
@@ -67,12 +66,16 @@ class BotiumConnectorDialogflow {
 
   Build () {
     debug('Build called')
-    this.sessionOpts = {
-      credentials: {
+
+    this.sessionOpts = {}
+
+    if (this.caps[Capabilities.DIALOGFLOW_CLIENT_EMAIL] && this.caps[Capabilities.DIALOGFLOW_PRIVATE_KEY]) {
+      this.sessionOpts.credentials = {
         client_email: this.caps[Capabilities.DIALOGFLOW_CLIENT_EMAIL],
         private_key: this.caps[Capabilities.DIALOGFLOW_PRIVATE_KEY]
       }
     }
+
     return Promise.resolve()
   }
 

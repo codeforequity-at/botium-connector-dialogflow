@@ -64,3 +64,4 @@ dist
 package-lock.json
 /.idea
 package-lock.json
+*.local.json
