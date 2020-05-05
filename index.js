@@ -1,7 +1,7 @@
 const util = require('util')
-const uuidV1 = require('uuid/v1')
+const { v1: uuidV1 } = require('uuid')
 const mime = require('mime-types')
-const dialogflow = require('dialogflow')
+const dialogflow = require('@google-cloud/dialogflow')
 const _ = require('lodash')
 const debug = require('debug')('botium-connector-dialogflow')
 
@@ -12,6 +12,7 @@ const structjson = require('./structjson')
 
 const Capabilities = {
   DIALOGFLOW_PROJECT_ID: 'DIALOGFLOW_PROJECT_ID',
+  DIALOGFLOW_ENVIRONMENT: 'DIALOGFLOW_ENVIRONMENT',
   DIALOGFLOW_CLIENT_EMAIL: 'DIALOGFLOW_CLIENT_EMAIL',
   DIALOGFLOW_PRIVATE_KEY: 'DIALOGFLOW_PRIVATE_KEY',
   DIALOGFLOW_LANGUAGE_CODE: 'DIALOGFLOW_LANGUAGE_CODE',
@@ -103,7 +104,13 @@ class BotiumConnectorDialogflow {
       this.sessionClient = new dialogflow.SessionsClient(this.sessionOpts)
     }
 
-    this.sessionPath = this.sessionClient.sessionPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID], this.conversationId)
+    if (this.caps[Capabilities.DIALOGFLOW_ENVIRONMENT]) {
+      this.sessionPath = this.sessionClient.projectAgentEnvironmentUserSessionPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID], this.caps[Capabilities.DIALOGFLOW_ENVIRONMENT], '-', this.conversationId)
+    } else {
+      this.sessionPath = this.sessionClient.projectAgentSessionPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID], this.conversationId)
+    }
+
+    debug(`Using Dialogflow SessionPath: ${this.sessionPath}`)
     this.contextClient = new dialogflow.ContextsClient(this.sessionOpts)
     this.queryParams = {
       contexts: this._getContextSuffixes().map((c) => this._createInitialContext(c))
@@ -329,8 +336,15 @@ class BotiumConnectorDialogflow {
   }
 
   _createInitialContext (contextSuffix) {
+    let contextPath = null
+    if (this.caps[Capabilities.DIALOGFLOW_ENVIRONMENT]) {
+      contextPath = this.contextClient.projectAgentEnvironmentUserSessionContextPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID], this.caps[Capabilities.DIALOGFLOW_ENVIRONMENT], '-', this.conversationId, this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_NAME + contextSuffix])
+    } else {
+      contextPath = this.contextClient.projectAgentSessionContextPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID], this.conversationId, this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_NAME + contextSuffix])
+    }
+
     return {
-      name: this.contextClient.contextPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID], this.conversationId, this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_NAME + contextSuffix]),
+      name: contextPath,
       lifespanCount: parseInt(this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_LIFESPAN + contextSuffix]),
       parameters: this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_PARAMETERS + contextSuffix] &&
         structjson.jsonToStructProto(this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_PARAMETERS + contextSuffix])
@@ -362,8 +376,12 @@ class BotiumConnectorDialogflow {
   }
 
   _createCustomContext (contextName, contextLifespan, contextParameters) {
-    const contextPath = this.contextClient.contextPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID],
-      this.conversationId, contextName)
+    let contextPath = null
+    if (this.caps[Capabilities.DIALOGFLOW_ENVIRONMENT]) {
+      contextPath = this.contextClient.projectAgentEnvironmentUserSessionContextPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID], this.caps[Capabilities.DIALOGFLOW_ENVIRONMENT], '-', this.conversationId, contextName)
+    } else {
+      contextPath = this.contextClient.projectAgentSessionContextPath(this.caps[Capabilities.DIALOGFLOW_PROJECT_ID], this.conversationId, contextName)
+    }
     try {
       contextLifespan = parseInt(contextLifespan)
     } catch (err) {

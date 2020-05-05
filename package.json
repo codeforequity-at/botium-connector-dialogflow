@@ -5,7 +5,7 @@
   "main": "dist/botium-connector-dialogflow-cjs.js",
   "module": "dist/botium-connector-dialogflow-es.js",
   "engines": {
-    "node": ">=8.13"
+    "node": ">=10"
   },
   "bin": {
     "botium-connector-dialogflow-cli": "./bin/cli.js"
@@ -24,39 +24,38 @@
   "bugs": {
     "url": "https://github.com/codeforequity-at/botium-core/issues"
   },
-  "homepage": "https://github.com/codeforequity-at/botium-connector-dialogflow#readme",
+  "homepage": "https://www.botium.ai",
   "devDependencies": {
-    "@babel/core": "^7.7.4",
-    "@babel/node": "^7.7.4",
-    "@babel/plugin-transform-runtime": "^7.7.4",
-    "@babel/preset-env": "^7.7.4",
-    "eslint": "^6.7.1",
-    "eslint-config-standard": "^14.1.0",
-    "eslint-plugin-import": "^2.18.2",
-    "eslint-plugin-node": "^10.0.0",
+    "@babel/core": "^7.9.6",
+    "@babel/node": "^7.8.7",
+    "@babel/plugin-transform-runtime": "^7.9.6",
+    "@babel/preset-env": "^7.9.6",
+    "eslint": "^6.8.0",
+    "eslint-config-standard": "^14.1.1",
+    "eslint-plugin-import": "^2.20.2",
+    "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
-    "rollup": "^1.27.5",
-    "rollup-plugin-babel": "^4.3.3",
+    "rollup": "^2.7.6",
+    "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-json": "^4.0.0",
     "rollup-plugin-node-resolve": "^5.2.0"
   },
   "dependencies": {
-    "@babel/runtime": "^7.7.4",
-    "adm-zip": "^0.4.13",
+    "@babel/runtime": "^7.9.6",
+    "adm-zip": "^0.4.14",
     "debug": "^4.1.1",
-    "dialogflow": "^1.2.0",
+    "@google-cloud/dialogflow": "^2.0.0",
     "lodash": "^4.17.15",
-    "mime-types": "^2.1.25",
-    "mkdirp": "^0.5.1",
+    "mime-types": "^2.1.27",
+    "mkdirp": "^1.0.4",
     "randomatic": "^3.1.1",
-    "slug": "^1.1.0",
-    "uuid": "^3.3.3",
-    "yargs": "^14.0.0"
+    "slug": "^2.1.1",
+    "uuid": "^8.0.0",
+    "yargs": "^15.3.1"
   },
   "peerDependencies": {
-    "botium-core": ">= 1.9.0",
-    "botium-connector-echo": ">= 0.0.4"
+    "botium-core": ">= 1.9.0"
   }
 }

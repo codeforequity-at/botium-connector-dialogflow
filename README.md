@@ -88,7 +88,7 @@ You can either run the CLI with *[botium-cli](https://github.com/codeforequity-a
     > botium-connector-dialogflow-cli import --buildconvos
     > botium-connector-dialogflow-cli import --buildmultistepconvos
 
-_Please note that you will have to install the npm packages botium-core and botium-connector-echo manually before using this CLI_
+_Please note that you will have to install the npm packages botium-core manually before using this CLI_
 
 For getting help on the available CLI options and switches, run:
 
@@ -136,6 +136,10 @@ Set the capability __CONTAINERMODE__ to __dialogflow__ to activate this connecto
 ### DIALOGFLOW_PROJECT_ID
 
 Google project id. See [This article](https://chatbotsmagazine.com/3-steps-setup-automated-testing-for-google-assistant-and-dialogflow-de42937e57c6)
+
+### DIALOGFLOW_ENVIRONMENT
+
+Dialogflow publishing environment name. See [This article](https://cloud.google.com/dialogflow/docs/agents-versions)
 
 ### DIALOGFLOW_CLIENT_EMAIL
 

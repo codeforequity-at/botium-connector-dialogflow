@@ -1,8 +1,8 @@
-const uuidv4 = require('uuid/v4')
+const { v4: uuidv4 } = require('uuid')
 const path = require('path')
 const randomize = require('randomatic')
 const AdmZip = require('adm-zip')
-const dialogflow = require('dialogflow')
+const dialogflow = require('@google-cloud/dialogflow')
 const botium = require('botium-core')
 const debug = require('debug')('botium-connector-dialogflow-nlp')
 
@@ -153,7 +153,7 @@ const trainIntentUtterances = async ({ caps }, intents, { origAgentInfo }) => {
     debug(`Dialogflow agent ready: ${newAgent.parent}/${newAgent.displayName}`)
 
     const sessionClient = new dialogflow.SessionsClient(nlpContainer.pluginInstance.sessionOpts)
-    const sessionPath = sessionClient.sessionPath(nlpContainer.pluginInstance.caps.DIALOGFLOW_NLP_PROJECT_ID, randomize('Aa0', 20))
+    const sessionPath = sessionClient.projectAgentSessionPath(nlpContainer.pluginInstance.caps.DIALOGFLOW_NLP_PROJECT_ID, randomize('Aa0', 20))
     const pingRequest = {
       session: sessionPath,
       queryInput: {

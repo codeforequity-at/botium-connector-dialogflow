@@ -2,7 +2,7 @@ const util = require('util')
 const path = require('path')
 const slug = require('slug')
 const AdmZip = require('adm-zip')
-const dialogflow = require('dialogflow')
+const dialogflow = require('@google-cloud/dialogflow')
 const _ = require('lodash')
 const botium = require('botium-core')
 const debug = require('debug')('botium-connector-dialogflow-intents')
@@ -199,7 +199,7 @@ const loadAgentZip = (filenameOrRawData) => {
 const importDialogflow = async (argv, importFunction) => {
   const caps = argv.caps || {}
   if (argv.agentzip) {
-    caps[botium.Capabilities.CONTAINERMODE] = 'echo'
+    caps[botium.Capabilities.CONTAINERMODE] = () => ({ UserSays: () => {} })
   } else {
     caps[botium.Capabilities.CONTAINERMODE] = path.resolve(__dirname, '..', 'index.js')
   }
