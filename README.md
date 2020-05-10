@@ -142,12 +142,18 @@ Google project id. See [This article](https://chatbotsmagazine.com/3-steps-setup
 Dialogflow publishing environment name. See [This article](https://cloud.google.com/dialogflow/docs/agents-versions)
 
 ### DIALOGFLOW_CLIENT_EMAIL
+_Optional_
 
 Google client email. See [This article](https://chatbotsmagazine.com/3-steps-setup-automated-testing-for-google-assistant-and-dialogflow-de42937e57c6)
 
+If not given, [Google default authentication](https://cloud.google.com/docs/authentication/getting-started) will be used.
+
 ### DIALOGFLOW_PRIVATE_KEY
+_Optional_
 
 Google private key. See [This article](https://chatbotsmagazine.com/3-steps-setup-automated-testing-for-google-assistant-and-dialogflow-de42937e57c6)
+
+If not given, [Google default authentication](https://cloud.google.com/docs/authentication/getting-started) will be used.
 
 ### DIALOGFLOW_LANGUAGE_CODE
 
