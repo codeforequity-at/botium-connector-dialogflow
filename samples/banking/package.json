@@ -6,14 +6,9 @@
   "scripts": {
     "test": "mocha spec"
   },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "botium-bindings": "^2.0.2"
-  },
   "botium": {
     "convodirs": [
-      "spec\\convo"
+      "spec/convo"
     ],
     "expandConvos": true,
     "expandUtterancesToConvos": false
