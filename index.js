@@ -6,6 +6,7 @@ const _ = require('lodash')
 const debug = require('debug')('botium-connector-dialogflow')
 
 const { importHandler, importArgs } = require('./src/dialogflowintents')
+const { exportHandler, exportArgs } = require('./src/dialogflowintents')
 const { extractIntentUtterances, trainIntentUtterances, cleanupIntentUtterances } = require('./src/nlp')
 
 const structjson = require('./structjson')
@@ -459,6 +460,10 @@ module.exports = {
   Import: {
     Handler: importHandler,
     Args: importArgs
+  },
+  Export: {
+    Handler: exportHandler,
+    Args: exportArgs
   },
   NLP: {
     ExtractIntentUtterances: extractIntentUtterances,

@@ -5,6 +5,7 @@ const AdmZip = require('adm-zip')
 const dialogflow = require('@google-cloud/dialogflow')
 const _ = require('lodash')
 const botium = require('botium-core')
+const { convertToDialogflowUtterance, jsonBuffer } = require('./helpers')
 const debug = require('debug')('botium-connector-dialogflow-intents')
 
 const importIntents = ({ agentInfo, zipEntries, unzip }, argv) => {
@@ -184,6 +185,38 @@ const importConversations = ({ agentInfo, zipEntries, unzip }, argv) => {
   return { convos, utterances }
 }
 
+const exportIntents = async ({ agentInfo, zip, container }, { utterances, convos }, argv) => {
+  const result = {}
+  const filename = './export.zip'
+  result.zip = new AdmZip()
+  utterances.forEach(utt => {
+    const { utterance, userSays } = convertToDialogflowUtterance(utt, agentInfo.language)
+    result.zip.addFile(`intents/${utt.name}.json`, jsonBuffer(utterance))
+    result.zip.addFile(`intents/${utt.name}_usersays_${agentInfo.language}.json`, jsonBuffer(userSays))
+  })
+  result.zip.addFile('package.json', jsonBuffer({
+    version: '1.0.0'
+  }))
+  result.zip.addFile('agent.json', jsonBuffer(agentInfo))
+
+  if (argv.agentzip) {
+    result.zip.writeZip(filename)
+  } else {
+    const agentsClient = new dialogflow.AgentsClient(container.pluginInstance.sessionOpts)
+    const projectPath = agentsClient.projectPath(container.caps.DIALOGFLOW_PROJECT_ID)
+    const agentResponses = await agentsClient.getAgent({ parent: projectPath })
+    const newAgentInfo = agentResponses[0]
+    const restoreResponses = await agentsClient.restoreAgent({ parent: newAgentInfo.parent, agentContent: result.zip.toBuffer() })
+    await restoreResponses[0].promise()
+  }
+  debug(`Dialogflow agent info: ${util.inspect(result.agentInfo)}`)
+  return result
+}
+
+const exportConversations = ({ agentInfo, zip }, exportData, argv) => {
+
+}
+
 const loadAgentZip = (filenameOrRawData) => {
   const result = {}
   result.unzip = new AdmZip(filenameOrRawData)
@@ -252,7 +285,7 @@ const importDialogflow = async (argv, importFunction) => {
   return result
 }
 
-const handler = async (argv) => {
+const importHandler = async (argv) => {
   debug(`command options: ${util.inspect(argv)}`)
 
   let result = null
@@ -267,8 +300,79 @@ const handler = async (argv) => {
   }
 }
 
+const exportDialogflow = async (argv, exportData, exportFunction) => {
+  const caps = argv.caps || {}
+  if (argv.agentzip) {
+    caps[botium.Capabilities.CONTAINERMODE] = () => ({ UserSays: () => {} })
+  } else {
+    caps[botium.Capabilities.CONTAINERMODE] = path.resolve(__dirname, '..', 'index.js')
+  }
+  const botiumContext = {
+    driver: new botium.BotDriver(caps),
+    compiler: null,
+    container: null,
+    unzip: null,
+    zipEntries: null,
+    agentInfo: null
+  }
+
+  const result = {
+    botiumContext
+  }
+
+  botiumContext.container = await botiumContext.driver.Build()
+  botiumContext.compiler = await botiumContext.driver.BuildCompiler()
+
+  if (!argv.agentzip) {
+    try {
+      const agentsClient = new dialogflow.AgentsClient(botiumContext.container.pluginInstance.sessionOpts)
+      const projectPath = agentsClient.projectPath(botiumContext.container.caps.DIALOGFLOW_PROJECT_ID)
+
+      const allResponses = await agentsClient.exportAgent({ parent: projectPath })
+      const responses = await allResponses[0].promise()
+      try {
+        const buf = Buffer.from(responses[0].agentContent, 'base64')
+        Object.assign(botiumContext, loadAgentZip(buf))
+      } catch (err) {
+        throw new Error(`Dialogflow agent unpack failed: ${util.inspect(err)}`)
+      }
+    } catch (err) {
+      throw new Error(`Dialogflow agent connection failed: ${util.inspect(err)}`)
+    }
+  } else {
+    try {
+      Object.assign(botiumContext, loadAgentZip(argv.agentzip))
+    } catch (err) {
+      throw new Error(`Dialogflow agent unpack failed: ${util.inspect(err)}`)
+    }
+  }
+  Object.assign(result, exportFunction(botiumContext, exportData, argv))
+
+  try {
+    await botiumContext.container.Clean()
+  } catch (err) {
+    debug(`Error container cleanup: ${util.inspect(err)}`)
+  }
+  return result
+}
+
+const exportHandler = async (argv, exportData) => {
+  debug(`command options: ${util.inspect(argv)}`)
+
+  let result = null
+  if (argv.buildmultistepconvos) {
+    result = await exportDialogflow(argv, exportData, exportConversations)
+  } else {
+    result = await exportDialogflow(argv, exportData, exportIntents)
+  }
+  return {
+    convos: result.convos,
+    utterances: result.utterances
+  }
+}
+
 module.exports = {
-  importHandler: ({ caps, buildconvos, buildmultistepconvos, agentzip, ...rest } = {}) => handler({ caps, buildconvos, buildmultistepconvos, agentzip, ...rest }),
+  importHandler: ({ caps, buildconvos, buildmultistepconvos, agentzip, ...rest } = {}) => importHandler({ caps, buildconvos, buildmultistepconvos, agentzip, ...rest }),
   importArgs: {
     caps: {
       describe: 'Capabilities',
@@ -284,6 +388,23 @@ module.exports = {
       describe: 'Reverse-engineer Dialogflow agent and build multi-step convo files',
       type: 'boolean',
       default: false
+    },
+    agentzip: {
+      describe: 'Path to the exported Dialogflow agent zip file. If not given, it will be downloaded (with connection settings from botium.json).',
+      type: 'string'
+    }
+  },
+  exportHandler: ({ caps, buildconvos, buildmultistepconvos, agentzip, ...rest } = {}, { convos, utterances } = {}, { statusCallback } = {}) => exportHandler({ caps, buildconvos, buildmultistepconvos, agentzip, ...rest }, { convos, utterances }, { statusCallback }),
+  exportArgs: {
+    caps: {
+      describe: 'Capabilities',
+      type: 'json',
+      skipCli: true
+    },
+    language: {
+      describe: 'Language for the export',
+      type: 'string',
+      default: 'en'
     },
     agentzip: {
       describe: 'Path to the exported Dialogflow agent zip file. If not given, it will be downloaded (with connection settings from botium.json).',

@@ -1,8 +1,14 @@
+const { v4: uuidv4 } = require('uuid')
 const slug = require('slug')
 const fs = require('fs')
 const path = require('path')
 const mkdirp = require('mkdirp')
 const AdmZip = require('adm-zip')
+
+const jsonBuffer = (obj) => {
+  return Buffer.from(JSON.stringify(obj, null, 2), 'utf-8')
+}
+module.exports.jsonBuffer = jsonBuffer
 
 module.exports.writeConvosExcel = (compiler, convos, outputDir, filenamePrefix) => {
   const filename = path.resolve(outputDir, slug(filenamePrefix) + '.xlsx')
@@ -44,6 +50,57 @@ module.exports.writeUtterances = (compiler, utterance, samples, outputDir) => {
 
   fs.writeFileSync(filename, scriptData)
   return filename
+}
+
+module.exports.convertToDialogflowUtterance = (utterance, language) => {
+  return {
+    utterance: {
+      id: uuidv4(),
+      name: utterance.name,
+      auto: true,
+      contexts: [],
+      responses: [
+        {
+          resetContexts: false,
+          action: utterance.name,
+          affectedContexts: [],
+          parameters: [],
+          messages: [
+            {
+              type: 0,
+              lang: language,
+              condition: '',
+              speech: []
+            }
+          ],
+          defaultResponsePlatforms: {},
+          speech: []
+        }
+      ],
+      priority: 500000,
+      webhookUsed: false,
+      webhookForSlotFilling: false,
+      fallbackIntent: false,
+      events: [],
+      conditionalResponses: [],
+      condition: '',
+      conditionalFollowupEvents: []
+    },
+    userSays: utterance.utterances.map(utt => {
+      return {
+        id: uuidv4(),
+        data: [
+          {
+            text: utt,
+            userDefined: false
+          }
+        ],
+        isTemplate: false,
+        count: 0,
+        updated: 0
+      }
+    })
+  }
 }
 
 module.exports.loadAgentZip = async (agentsClient, projectPath) => {
