@@ -92,7 +92,7 @@ _Please note that you will have to install the npm packages botium-core manually
 
 For getting help on the available CLI options and switches, run:
 
-    > botium-connector-dialogflow-cli dialogflowimport --help
+    > botium-connector-dialogflow-cli import --help
 
 ## Dialogflow Context Handling
 

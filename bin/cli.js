@@ -85,7 +85,7 @@ yargsCmd.usage('Botium Connector Dialogflow CLI\n\nUsage: $0 [options]') // esli
   })
   .command({
     command: 'export',
-    describe: 'Uploading Utterances from Botium to IBM Watson Assistant',
+    describe: 'Uploading Utterances from Botium to Dialogflow',
     builder: (yargs) => {
       for (const arg of Object.keys(exportArgs)) {
         if (exportArgs[arg].skipCli) continue

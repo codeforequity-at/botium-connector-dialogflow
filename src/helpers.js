@@ -52,55 +52,22 @@ module.exports.writeUtterances = (compiler, utterance, samples, outputDir) => {
   return filename
 }
 
-module.exports.convertToDialogflowUtterance = (utterance, language) => {
-  return {
-    utterance: {
+module.exports.convertToDialogflowUtterance = (examples, language) => {
+  return examples.map(utt => {
+    return {
       id: uuidv4(),
-      name: utterance.name,
-      auto: true,
-      contexts: [],
-      responses: [
+      data: [
         {
-          resetContexts: false,
-          action: utterance.name,
-          affectedContexts: [],
-          parameters: [],
-          messages: [
-            {
-              type: 0,
-              lang: language,
-              condition: '',
-              speech: []
-            }
-          ],
-          defaultResponsePlatforms: {},
-          speech: []
+          text: utt,
+          userDefined: false
         }
       ],
-      priority: 500000,
-      webhookUsed: false,
-      webhookForSlotFilling: false,
-      fallbackIntent: false,
-      events: [],
-      conditionalResponses: [],
-      condition: '',
-      conditionalFollowupEvents: []
-    },
-    userSays: utterance.utterances.map(utt => {
-      return {
-        id: uuidv4(),
-        data: [
-          {
-            text: utt,
-            userDefined: false
-          }
-        ],
-        isTemplate: false,
-        count: 0,
-        updated: 0
-      }
-    })
-  }
+      isTemplate: false,
+      lang: language,
+      count: 0,
+      updated: 0
+    }
+  })
 }
 
 module.exports.loadAgentZip = async (agentsClient, projectPath) => {
