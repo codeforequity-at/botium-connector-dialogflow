@@ -1,6 +1,6 @@
 {
   "name": "botium-connector-dialogflow",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "description": "Botium Connector for Google Dialogflow",
   "main": "dist/botium-connector-dialogflow-cjs.js",
   "module": "dist/botium-connector-dialogflow-es.js",
@@ -44,9 +44,9 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.9.6",
-    "adm-zip": "^0.4.14",
-    "debug": "^4.1.1",
     "@google-cloud/dialogflow": "^2.0.0",
+    "debug": "^4.1.1",
+    "jszip": "^3.4.0",
     "lodash": "^4.17.15",
     "mime-types": "^2.1.27",
     "mkdirp": "^1.0.4",

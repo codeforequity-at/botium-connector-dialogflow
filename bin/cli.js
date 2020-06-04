@@ -7,6 +7,7 @@ const mkdirp = require('mkdirp')
 const { BotDriver } = require('botium-core')
 
 const { importHandler, importArgs } = require('../src/dialogflowintents')
+const { exportHandler, exportArgs } = require('../src/dialogflowintents')
 
 const writeConvo = (compiler, convo, outputDir) => {
   const filename = path.resolve(outputDir, slug(convo.header.name) + '.convo.txt')
@@ -79,6 +80,38 @@ yargsCmd.usage('Botium Connector Dialogflow CLI\n\nUsage: $0 [options]') // esli
         } catch (err) {
           console.log(`WARNING: writing utterances "${utterance.name}" failed: ${err.message}`)
         }
+      }
+    }
+  })
+  .command({
+    command: 'export',
+    describe: 'Uploading Utterances from Botium to Dialogflow',
+    builder: (yargs) => {
+      for (const arg of Object.keys(exportArgs)) {
+        if (exportArgs[arg].skipCli) continue
+        yargs.option(arg, exportArgs[arg])
+      }
+      yargs.option('input', {
+        describe: 'Input directory',
+        type: 'string',
+        default: '.'
+      })
+    },
+    handler: async (argv) => {
+      const inputDir = argv.input
+
+      const driver = new BotDriver()
+      const compiler = driver.BuildCompiler()
+      compiler.ReadScriptsFromDirectory(inputDir)
+
+      const convos = []
+      const utterances = Object.keys(compiler.utterances).reduce((acc, u) => acc.concat([compiler.utterances[u]]), [])
+
+      try {
+        const result = await exportHandler(argv, { convos, utterances }, { statusCallback: (log, obj) => console.log(log, obj) })
+        console.log(JSON.stringify(result, null, 2))
+      } catch (err) {
+        console.log(`FAILED: ${err.message}`)
       }
     }
   })
