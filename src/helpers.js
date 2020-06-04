@@ -1,58 +1,11 @@
 const { v4: uuidv4 } = require('uuid')
-const slug = require('slug')
-const fs = require('fs')
-const path = require('path')
-const mkdirp = require('mkdirp')
-const AdmZip = require('adm-zip')
+const JSZip = require('jszip')
 
 const jsonBuffer = (obj) => {
   return Buffer.from(JSON.stringify(obj, null, 2), 'utf-8')
 }
-module.exports.jsonBuffer = jsonBuffer
 
-module.exports.writeConvosExcel = (compiler, convos, outputDir, filenamePrefix) => {
-  const filename = path.resolve(outputDir, slug(filenamePrefix) + '.xlsx')
-
-  mkdirp.sync(outputDir)
-
-  const scriptData = compiler.Decompile(convos, 'SCRIPTING_FORMAT_XSLX')
-
-  fs.writeFileSync(filename, scriptData)
-  return filename
-}
-
-module.exports.writeIntentsExcel = (buffer, outputDir, filenamePrefix) => {
-  const filename = path.resolve(outputDir, slug(filenamePrefix) + '.xlsx')
-
-  mkdirp.sync(outputDir)
-
-  fs.writeFileSync(filename, buffer)
-  return filename
-}
-
-module.exports.writeConvo = (compiler, convo, outputDir) => {
-  const filename = path.resolve(outputDir, slug(convo.header.name) + '.convo.txt')
-
-  mkdirp.sync(outputDir)
-
-  const scriptData = compiler.Decompile([convo], 'SCRIPTING_FORMAT_TXT')
-
-  fs.writeFileSync(filename, scriptData)
-  return filename
-}
-
-module.exports.writeUtterances = (compiler, utterance, samples, outputDir) => {
-  const filename = path.resolve(outputDir, slug(utterance) + '.utterances.txt')
-
-  mkdirp.sync(outputDir)
-
-  const scriptData = [utterance, ...samples].join('\n')
-
-  fs.writeFileSync(filename, scriptData)
-  return filename
-}
-
-module.exports.convertToDialogflowUtterance = (examples, language) => {
+const convertToDialogflowUtterance = (examples, language) => {
   return examples.map(utt => {
     return {
       id: uuidv4(),
@@ -70,21 +23,32 @@ module.exports.convertToDialogflowUtterance = (examples, language) => {
   })
 }
 
-module.exports.loadAgentZip = async (agentsClient, projectPath) => {
+const loadAgentZip = async (agentsClient, projectPath) => {
   const agentResponses = await agentsClient.getAgent({ parent: projectPath })
   const agentInfo = agentResponses[0]
   const exportResponses = await agentsClient.exportAgent({ parent: projectPath })
   const waitResponses = await exportResponses[0].promise()
   try {
     const buf = Buffer.from(waitResponses[0].agentContent, 'base64')
-    const unzip = new AdmZip(buf)
+
+    const unzip = await JSZip.loadAsync(buf)
+    const zipEntries = []
+    unzip.forEach((relativePath, zipEntry) => {
+      zipEntries.push(zipEntry)
+    })
 
     return {
       unzip,
-      zipEntries: unzip.getEntries(),
+      zipEntries,
       agentInfo
     }
   } catch (err) {
     throw new Error(`Dialogflow agent unpack failed: ${err.message}`)
   }
+}
+
+module.exports = {
+  jsonBuffer,
+  convertToDialogflowUtterance,
+  loadAgentZip
 }

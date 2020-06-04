@@ -45,7 +45,6 @@
   "dependencies": {
     "@babel/runtime": "^7.9.6",
     "@google-cloud/dialogflow": "^2.0.0",
-    "adm-zip": "^0.4.14",
     "debug": "^4.1.1",
     "jszip": "^3.4.0",
     "lodash": "^4.17.15",

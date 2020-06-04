@@ -237,49 +237,43 @@ const importDialogflow = async (argv, status, importFunction) => {
   } else {
     caps[botium.Capabilities.CONTAINERMODE] = path.resolve(__dirname, '..', 'index.js')
   }
-  const botiumContext = {
-    driver: new botium.BotDriver(caps),
-    compiler: null,
-    container: null,
-    unzip: null,
-    zipEntries: null,
-    agentInfo: null
-  }
+  const driver = new botium.BotDriver(caps)
+  const container = await driver.Build()
 
-  botiumContext.container = await botiumContext.driver.Build()
-  botiumContext.compiler = await botiumContext.driver.BuildCompiler()
-
-  if (!argv.agentzip) {
-    try {
-      const agentsClient = new dialogflow.AgentsClient(botiumContext.container.pluginInstance.sessionOpts)
-      const projectPath = agentsClient.projectPath(botiumContext.container.caps.DIALOGFLOW_PROJECT_ID)
-
-      const allResponses = await agentsClient.exportAgent({ parent: projectPath })
-      const responses = await allResponses[0].promise()
+  let agent = null
+  try {
+    if (!argv.agentzip) {
       try {
-        const buf = Buffer.from(responses[0].agentContent, 'base64')
-        Object.assign(botiumContext, await loadAgentZip(buf))
+        const agentsClient = new dialogflow.AgentsClient(container.pluginInstance.sessionOpts)
+        const projectPath = agentsClient.projectPath(container.caps.DIALOGFLOW_PROJECT_ID)
+
+        const allResponses = await agentsClient.exportAgent({ parent: projectPath })
+        const responses = await allResponses[0].promise()
+        try {
+          const buf = Buffer.from(responses[0].agentContent, 'base64')
+          agent = await loadAgentZip(buf)
+        } catch (err) {
+          throw new Error(`Dialogflow agent unpack failed: ${err && err.message}`)
+        }
+      } catch (err) {
+        throw new Error(`Dialogflow agent connection failed: ${err && err.message}`)
+      }
+    } else {
+      try {
+        agent = await loadAgentZip(argv.agentzip)
       } catch (err) {
         throw new Error(`Dialogflow agent unpack failed: ${err && err.message}`)
       }
-    } catch (err) {
-      throw new Error(`Dialogflow agent connection failed: ${err && err.message}`)
     }
-  } else {
+    const { convos, utterances } = await importFunction(agent, argv, status)
+    return { convos, utterances }
+  } finally {
     try {
-      Object.assign(botiumContext, await loadAgentZip(argv.agentzip))
+      await container.Clean()
     } catch (err) {
-      throw new Error(`Dialogflow agent unpack failed: ${err && err.message}`)
+      debug(`Error container cleanup: ${err && err.message}`)
     }
   }
-  const { convos, utterances } = await importFunction(botiumContext, argv, status)
-
-  try {
-    await botiumContext.container.Clean()
-  } catch (err) {
-    debug(`Error container cleanup: ${err && err.message}`)
-  }
-  return { convos, utterances }
 }
 
 const importHandler = async (argv, status) => {
@@ -297,7 +291,7 @@ const importHandler = async (argv, status) => {
   }
 }
 
-const exportHandler = async ({ caps, agentzip, output, ...rest }, { utterances, convos }, { statusCallback }) => {
+const exportHandler = async ({ caps, getzip, agentzip, output, ...rest }, { utterances, convos }, { statusCallback }) => {
   caps = caps || {}
   if (agentzip) {
     caps[botium.Capabilities.CONTAINERMODE] = () => ({ UserSays: () => {} })
@@ -312,9 +306,8 @@ const exportHandler = async ({ caps, agentzip, output, ...rest }, { utterances, 
     if (statusCallback) statusCallback(log, obj)
   }
 
+  let agent = null
   try {
-    let agent = null
-
     if (!agentzip) {
       try {
         const agentsClient = new dialogflow.AgentsClient(container.pluginInstance.sessionOpts)
@@ -360,8 +353,11 @@ const exportHandler = async ({ caps, agentzip, output, ...rest }, { utterances, 
       }
     }
     const agentZipBuffer = await agent.unzip.generateAsync({ type: 'nodebuffer' })
-    if (output) {
+    if (getzip) {
+      return { agentZipBuffer }
+    } else if (output) {
       fs.writeFileSync(output, agentZipBuffer)
+      return { agentInfo: agent.agentInfo }
     } else {
       const agentsClient = new dialogflow.AgentsClient(container.pluginInstance.sessionOpts)
       const projectPath = agentsClient.projectPath(container.caps.DIALOGFLOW_PROJECT_ID)
@@ -369,7 +365,8 @@ const exportHandler = async ({ caps, agentzip, output, ...rest }, { utterances, 
       const newAgentInfo = agentResponses[0]
       const restoreResponses = await agentsClient.restoreAgent({ parent: newAgentInfo.parent, agentContent: agentZipBuffer })
       await restoreResponses[0].promise()
-      status(`Uploaded Dialogflow Agent to ${projectPath}`)
+      status(`Uploaded Dialogflow Agent to ${projectPath}`, newAgentInfo)
+      return { agentInfo: newAgentInfo }
     }
   } finally {
     if (container) {
@@ -380,7 +377,6 @@ const exportHandler = async ({ caps, agentzip, output, ...rest }, { utterances, 
       }
     }
   }
-  return { }
 }
 
 module.exports = {
@@ -406,12 +402,18 @@ module.exports = {
       type: 'string'
     }
   },
-  exportHandler: ({ caps, agentzip, output, ...rest } = {}, { convos, utterances } = {}, { statusCallback } = {}) => exportHandler({ caps, agentzip, output, ...rest }, { convos, utterances }, { statusCallback }),
+  exportHandler: ({ caps, getzip, agentzip, output, ...rest } = {}, { convos, utterances } = {}, { statusCallback } = {}) => exportHandler({ caps, getzip, agentzip, output, ...rest }, { convos, utterances }, { statusCallback }),
   exportArgs: {
     caps: {
       describe: 'Capabilities',
       type: 'json',
       skipCli: true
+    },
+    getzip: {
+      describe: 'Return ZIP file buffer',
+      type: 'boolean',
+      skipCli: true,
+      default: false
     },
     agentzip: {
       describe: 'Path to the exported Dialogflow agent zip file. If not given, it will be downloaded (with connection settings from botium.json).',

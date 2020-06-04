@@ -1,7 +1,7 @@
 const { v4: uuidv4 } = require('uuid')
 const path = require('path')
 const randomize = require('randomatic')
-const AdmZip = require('adm-zip')
+const JSZip = require('jszip')
 const dialogflow = require('@google-cloud/dialogflow')
 const botium = require('botium-core')
 const debug = require('debug')('botium-connector-dialogflow-nlp')
@@ -40,40 +40,39 @@ const extractIntentUtterances = async ({ caps }) => {
     const projectPath = agentsClient.projectPath(container.caps.DIALOGFLOW_PROJECT_ID)
     const { unzip, zipEntries, agentInfo } = await loadAgentZip(agentsClient, projectPath)
     debug(`Dialogflow agent: ${JSON.stringify(agentInfo, null, 2)}`)
-    // debug(`Dialogflow agent file entries: ${JSON.stringify(zipEntries.map(z => z.entryName), null, 2)}`)
 
     const languageCodeBotium = container.pluginInstance.caps.DIALOGFLOW_LANGUAGE_CODE.toLowerCase()
     const languageCodeAgent = agentInfo.defaultLanguageCode
 
     const intents = []
 
-    const intentEntries = zipEntries.filter((zipEntry) => zipEntry.entryName.startsWith('intent') && !zipEntry.entryName.match('usersays'))
-    intentEntries.forEach((zipEntry) => {
-      const intent = JSON.parse(unzip.readAsText(zipEntry.entryName))
+    const intentEntries = zipEntries.filter((zipEntry) => zipEntry.name.startsWith('intent') && !zipEntry.name.match('usersays'))
+    for (const zipEntry of intentEntries) {
+      const intent = JSON.parse(await unzip.file(zipEntry.name).async('string'))
       if (intent.parentId) return
       if (intent.contexts && intent.contexts.length > 0) return
 
-      const utterancesEntryName1 = zipEntry.entryName.replace('.json', '') + '_usersays_' + languageCodeBotium + '.json'
-      const utterancesEntryName2 = zipEntry.entryName.replace('.json', '') + '_usersays_' + languageCodeAgent + '.json'
+      const utterancesEntryName1 = zipEntry.name.replace('.json', '') + '_usersays_' + languageCodeBotium + '.json'
+      const utterancesEntryName2 = zipEntry.name.replace('.json', '') + '_usersays_' + languageCodeAgent + '.json'
 
       let utterancesEntryName = null
-      if (zipEntries.find((zipEntry) => zipEntry.entryName === utterancesEntryName1)) {
+      if (zipEntries.find((zipEntry) => zipEntry.name === utterancesEntryName1)) {
         utterancesEntryName = utterancesEntryName1
-      } else if (zipEntries.find((zipEntry) => zipEntry.entryName === utterancesEntryName2)) {
+      } else if (zipEntries.find((zipEntry) => zipEntry.name === utterancesEntryName2)) {
         utterancesEntryName = utterancesEntryName2
       }
       if (!utterancesEntryName) {
         debug(`Utterances files not found for ${intent.name}, checking for utterances in ${utterancesEntryName1} and ${utterancesEntryName2}. Ignoring intent.`)
         return
       }
-      const utterancesEntry = JSON.parse(unzip.readAsText(utterancesEntryName))
+      const utterancesEntry = JSON.parse(await unzip.file(utterancesEntryName).async('string'))
       const inputUtterances = utterancesEntry.map((utterance) => utterance.data.reduce((accumulator, currentValue) => accumulator + '' + currentValue.text, ''))
 
       intents.push({
         intentName: intent.name,
         utterances: inputUtterances
       })
-    })
+    }
     return {
       intents,
       origAgentInfo: agentInfo
@@ -120,16 +119,17 @@ const trainIntentUtterances = async ({ caps }, intents, { origAgentInfo }) => {
     const newAgent = createAgentResponses[0]
     debug(`Dialogflow agent created: ${newAgent.parent}/${newAgent.displayName}`)
 
-    const agentZip = new AdmZip()
-    agentZip.addFile('package.json', jsonBuffer({
+    const agentZip = new JSZip()
+    agentZip.file('package.json', jsonBuffer({
       version: '1.0.0'
     }))
+    const agentZipIntentFolder = agentZip.folder('intents')
     for (const intent of (intents || [])) {
-      agentZip.addFile(`intents/${intent.intentName}.json`, jsonBuffer({
+      agentZipIntentFolder.file(`${intent.intentName}.json`, jsonBuffer({
         id: uuidv4(),
         name: intent.intentName
       }))
-      agentZip.addFile(`intents/${intent.intentName}_usersays_${newAgent.defaultLanguageCode}.json`, jsonBuffer(
+      agentZipIntentFolder.file(`${intent.intentName}_usersays_${newAgent.defaultLanguageCode}.json`, jsonBuffer(
         (intent.utterances || []).map(u => ({
           id: uuidv4(),
           data: [
@@ -140,7 +140,7 @@ const trainIntentUtterances = async ({ caps }, intents, { origAgentInfo }) => {
         }))
       ))
     }
-    const agentZipBuffer = agentZip.toBuffer()
+    const agentZipBuffer = await agentZip.generateAsync({ type: 'nodebuffer' })
 
     debug(`Dialogflow agent restoring intents: ${newAgent.parent}/${newAgent.displayName}`)
     const restoreResponses = await agentsClient.restoreAgent({ parent: newAgent.parent, agentContent: agentZipBuffer })
