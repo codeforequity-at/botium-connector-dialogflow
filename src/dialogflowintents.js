@@ -8,7 +8,12 @@ const botium = require('botium-core')
 const { convertToDialogflowUtterance, jsonBuffer } = require('./helpers')
 const debug = require('debug')('botium-connector-dialogflow-intents')
 
-const importIntents = ({ agentInfo, zipEntries, unzip }, argv) => {
+const importIntents = ({ agentInfo, zipEntries, unzip }, argv, { statusCallback }) => {
+  const status = (log, obj) => {
+    debug(log, obj)
+    if (statusCallback) statusCallback(log, obj)
+  }
+
   const intentEntries = zipEntries.filter((zipEntry) => zipEntry.entryName.startsWith('intent') && !zipEntry.entryName.match('usersays'))
 
   const convos = []
@@ -21,7 +26,7 @@ const importIntents = ({ agentInfo, zipEntries, unzip }, argv) => {
     const utterancesEntryName = zipEntry.entryName.replace('.json', '') + '_usersays_' + agentInfo.language + '.json'
     debug(`Found root intent ${intent.name}, checking for utterances in ${utterancesEntryName}`)
     if (!zipEntries.find((zipEntry) => zipEntry.entryName === utterancesEntryName)) {
-      debug(`Utterances files not found for ${intent.name}, ignoring intent`)
+      status(`Utterances files not found for ${intent.name}, ignoring intent`)
       return
     }
     const utterancesEntry = JSON.parse(unzip.readAsText(utterancesEntryName))
@@ -65,7 +70,12 @@ const importIntents = ({ agentInfo, zipEntries, unzip }, argv) => {
   return { convos, utterances }
 }
 
-const importConversations = ({ agentInfo, zipEntries, unzip }, argv) => {
+const importConversations = ({ agentInfo, zipEntries, unzip }, argv, { statusCallback }) => {
+  const status = (log, obj) => {
+    debug(log, obj)
+    if (statusCallback) statusCallback(log, obj)
+  }
+
   const intentEntries = zipEntries.filter((zipEntry) => zipEntry.entryName.startsWith('intent') && !zipEntry.entryName.match('usersays'))
 
   const convos = []
@@ -78,7 +88,7 @@ const importConversations = ({ agentInfo, zipEntries, unzip }, argv) => {
     const utterancesEntry = zipEntry.entryName.replace('.json', '') + '_usersays_' + agentInfo.language + '.json'
     debug(`Found intent ${intent.name}, checking for utterances in ${utterancesEntry}`)
     if (!zipEntries.find((zipEntry) => zipEntry.entryName === utterancesEntry)) {
-      debug(`Utterances files not found for ${intent.name}, ignoring intent`)
+      status(`Utterances files not found for ${intent.name}, ignoring intent`)
       return
     }
     intentsById[intent.id] = intent
@@ -229,7 +239,7 @@ const loadAgentZip = (filenameOrRawData) => {
   return result
 }
 
-const importDialogflow = async (argv, importFunction) => {
+const importDialogflow = async (argv, status, importFunction) => {
   const caps = argv.caps || {}
   if (argv.agentzip) {
     caps[botium.Capabilities.CONTAINERMODE] = () => ({ UserSays: () => {} })
@@ -275,7 +285,7 @@ const importDialogflow = async (argv, importFunction) => {
       throw new Error(`Dialogflow agent unpack failed: ${util.inspect(err)}`)
     }
   }
-  Object.assign(result, importFunction(botiumContext, argv))
+  Object.assign(result, importFunction(botiumContext, argv, status))
 
   try {
     await botiumContext.container.Clean()
@@ -285,14 +295,14 @@ const importDialogflow = async (argv, importFunction) => {
   return result
 }
 
-const importHandler = async (argv) => {
+const importHandler = async (argv, status) => {
   debug(`command options: ${util.inspect(argv)}`)
 
   let result = null
   if (argv.buildmultistepconvos) {
-    result = await importDialogflow(argv, importConversations)
+    result = await importDialogflow(argv, status, importConversations)
   } else {
-    result = await importDialogflow(argv, importIntents)
+    result = await importDialogflow(argv, status, importIntents)
   }
   return {
     convos: result.convos,
@@ -372,7 +382,7 @@ const exportHandler = async (argv, exportData) => {
 }
 
 module.exports = {
-  importHandler: ({ caps, buildconvos, buildmultistepconvos, agentzip, ...rest } = {}) => importHandler({ caps, buildconvos, buildmultistepconvos, agentzip, ...rest }),
+  importHandler: ({ caps, buildconvos, buildmultistepconvos, agentzip, ...rest } = {}, { statusCallback } = {}) => importHandler({ caps, buildconvos, buildmultistepconvos, agentzip, ...rest }, { statusCallback }),
   importArgs: {
     caps: {
       describe: 'Capabilities',
@@ -382,7 +392,7 @@ module.exports = {
     buildconvos: {
       describe: 'Build convo files with intent asserters',
       type: 'boolean',
-      default: true
+      default: false
     },
     buildmultistepconvos: {
       describe: 'Reverse-engineer Dialogflow agent and build multi-step convo files',

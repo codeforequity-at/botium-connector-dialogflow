@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "mocha spec"
+    "test": "mocha spec",
+    "import-intents": "botium-connector-dialogflow-cli import --output spec/import",
+    "import-conversations": "botium-connector-dialogflow-cli import --buildmultistepconvos --output spec/import"
   },
   "botium": {
     "convodirs": [

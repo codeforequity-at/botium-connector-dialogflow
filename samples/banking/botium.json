@@ -3,8 +3,7 @@
     "Capabilities": {
       "PROJECTNAME": "Google Dialogflow Techdemo",
       "CONTAINERMODE": "dialogflow",
-      "DIALOGFLOW_PROJECT_ID": "banking-26456",
-      "DIALOGFLOW_OUTPUT_PLATFORM": "FACEBOOK"
+      "DIALOGFLOW_PROJECT_ID": "banking-1-uejcap"
     }
   }
 }
