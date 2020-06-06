@@ -1,13 +1,22 @@
 const util = require('util')
 const fs = require('fs')
 const path = require('path')
-const slug = require('slug')
 const JSZip = require('jszip')
 const dialogflow = require('@google-cloud/dialogflow')
 const _ = require('lodash')
 const botium = require('botium-core')
 const { convertToDialogflowUtterance, jsonBuffer } = require('./helpers')
 const debug = require('debug')('botium-connector-dialogflow-intents')
+
+const getUserSaysEntryNameForZipEntry = (zipEntry, agentInfo) => {
+  const utterancesEntryName = zipEntry.name.replace('.json', '') + '_usersays_' + agentInfo.language + '.json'
+  return utterancesEntryName
+}
+const getUserSaysEntryNameForIntent = (intentName, agentInfo) => {
+  const filePrefix = intentName.replace(/:/g, '_')
+  const utterancesEntryName = `intents/${filePrefix}_usersays_${agentInfo.language}.json`
+  return utterancesEntryName
+}
 
 const importIntents = async ({ agentInfo, zipEntries, unzip }, argv, { statusCallback }) => {
   const status = (log, obj) => {
@@ -24,7 +33,7 @@ const importIntents = async ({ agentInfo, zipEntries, unzip }, argv, { statusCal
     const intent = JSON.parse(await unzip.file(zipEntry.name).async('string'))
     if (intent.parentId) continue
 
-    const utterancesEntryName = zipEntry.name.replace('.json', '') + '_usersays_' + agentInfo.language + '.json'
+    const utterancesEntryName = getUserSaysEntryNameForZipEntry(zipEntry, agentInfo)
     debug(`Found root intent "${intent.name}", checking for utterances in ${utterancesEntryName}`)
     if (!zipEntries.find((zipEntry) => zipEntry.name === utterancesEntryName)) {
       status(`Utterances files not found for "${intent.name}", ignoring intent`)
@@ -34,9 +43,8 @@ const importIntents = async ({ agentInfo, zipEntries, unzip }, argv, { statusCal
     const inputUtterances = utterancesEntry.map((utterance) => utterance.data.reduce((accumulator, currentValue) => accumulator + '' + currentValue.text, ''))
 
     if (argv.buildconvos) {
-      const utterancesRef = slug(intent.name)
       utterances.push({
-        name: utterancesRef,
+        name: intent.name,
         utterances: inputUtterances
       })
 
@@ -47,7 +55,7 @@ const importIntents = async ({ agentInfo, zipEntries, unzip }, argv, { statusCal
         conversation: [
           {
             sender: 'me',
-            messageText: utterancesRef
+            messageText: intent.name
           },
           {
             sender: 'bot',
@@ -101,15 +109,15 @@ const importConversations = async ({ agentInfo, zipEntries, unzip }, argv, { sta
   for (const zipEntry of intentEntries) {
     const intent = JSON.parse(await unzip.file(zipEntry.name).async('string'))
 
-    const utterancesEntry = zipEntry.name.replace('.json', '') + '_usersays_' + agentInfo.language + '.json'
-    debug(`Found intent ${intent.name}, checking for utterances in ${utterancesEntry}`)
-    if (!zipEntries.find((zipEntry) => zipEntry.name === utterancesEntry)) {
+    const utterancesEntryName = getUserSaysEntryNameForZipEntry(zipEntry, agentInfo)
+    debug(`Found intent ${intent.name}, checking for utterances in ${utterancesEntryName}`)
+    if (!zipEntries.find((zipEntry) => zipEntry.name === utterancesEntryName)) {
       status(`Utterances files not found for ${intent.name}, ignoring intent`)
       continue
     }
     intentsById[intent.id] = intent
 
-    const utterances = JSON.parse(await unzip.file(utterancesEntry).async('string'))
+    const utterances = JSON.parse(await unzip.file(utterancesEntryName).async('string'))
     intent.inputUtterances = utterances.map((utterance) => utterance.data.reduce((accumulator, currentValue) => accumulator + '' + currentValue.text, ''))
     debug(`Utterances file for ${intent.name}: ${intent.inputUtterances}`)
 
@@ -158,11 +166,10 @@ const importConversations = async ({ agentInfo, zipEntries, unzip }, argv, { sta
   const follow = (intent, currentStack = []) => {
     const cp = currentStack.slice(0)
 
-    const utterancesRef = slug(intent.name + '_input')
-    cp.push({ sender: 'me', messageText: utterancesRef, intent: intent.name })
+    cp.push({ sender: 'me', messageText: intent.name, intent: intent.name })
 
     utterances.push({
-      name: utterancesRef,
+      name: intent.name,
       utterances: intent.inputUtterances
     })
 
@@ -178,7 +185,7 @@ const importConversations = async ({ agentInfo, zipEntries, unzip }, argv, { sta
           ]
         }
         if (intent.outputUtterances[stepIndex] && intent.outputUtterances[stepIndex].length > 0) {
-          const utterancesRef = slug(intent.name + '_output_' + stepIndex)
+          const utterancesRef = intent.name + ' - output ' + stepIndex
           utterances.push({
             name: utterancesRef,
             utterances: intent.outputUtterances[stepIndex]
@@ -188,7 +195,7 @@ const importConversations = async ({ agentInfo, zipEntries, unzip }, argv, { sta
         cp.push(convoStep)
       }
     } else {
-      cp.push({ sender: 'bot', messageText: '!INCOMPREHENSION' })
+      cp.push({ sender: 'bot', messageText: '' })
     }
 
     if (intent.children) {
@@ -244,8 +251,10 @@ const importDialogflow = async (argv, status, importFunction) => {
   try {
     if (!argv.agentzip) {
       try {
+        debug('Building Dialogflow Connection with sessionOpts', container.pluginInstance.sessionOpts)
         const agentsClient = new dialogflow.AgentsClient(container.pluginInstance.sessionOpts)
-        const projectPath = agentsClient.projectPath(container.caps.DIALOGFLOW_PROJECT_ID)
+        debug('Building Dialogflow Connection with projectPath', container.pluginInstance.caps.DIALOGFLOW_PROJECT_ID)
+        const projectPath = agentsClient.projectPath(container.pluginInstance.caps.DIALOGFLOW_PROJECT_ID)
 
         const allResponses = await agentsClient.exportAgent({ parent: projectPath })
         const responses = await allResponses[0].promise()
@@ -256,7 +265,7 @@ const importDialogflow = async (argv, status, importFunction) => {
           throw new Error(`Dialogflow agent unpack failed: ${err && err.message}`)
         }
       } catch (err) {
-        throw new Error(`Dialogflow agent connection failed: ${err && err.message}`)
+        throw new Error(`Dialogflow agent connection failed: ${util.inspect(err)}`)
       }
     } else {
       try {
@@ -310,8 +319,10 @@ const exportHandler = async ({ caps, getzip, agentzip, output, ...rest }, { utte
   try {
     if (!agentzip) {
       try {
+        debug('Building Dialogflow Connection with sessionOpts', container.pluginInstance.sessionOpts)
         const agentsClient = new dialogflow.AgentsClient(container.pluginInstance.sessionOpts)
-        const projectPath = agentsClient.projectPath(container.caps.DIALOGFLOW_PROJECT_ID)
+        debug('Building Dialogflow Connection with projectPath', container.pluginInstance.caps.DIALOGFLOW_PROJECT_ID)
+        const projectPath = agentsClient.projectPath(container.pluginInstance.caps.DIALOGFLOW_PROJECT_ID)
 
         const allResponses = await agentsClient.exportAgent({ parent: projectPath })
         const responses = await allResponses[0].promise()
@@ -322,7 +333,7 @@ const exportHandler = async ({ caps, getzip, agentzip, output, ...rest }, { utte
           throw new Error(`Dialogflow agent unpack failed: ${err && err.message}`)
         }
       } catch (err) {
-        throw new Error(`Dialogflow agent connection failed: ${err && err.message}`)
+        throw new Error(`Dialogflow agent connection failed: ${util.inspect(err)}`)
       }
     } else {
       try {
@@ -333,7 +344,7 @@ const exportHandler = async ({ caps, getzip, agentzip, output, ...rest }, { utte
     }
 
     for (const utt of utterances) {
-      const utterancesEntryName = `intents/${utt.name}_usersays_${agent.agentInfo.language}.json`
+      const utterancesEntryName = getUserSaysEntryNameForIntent(utt.name, agent.agentInfo)
       const utterancesEntry = agent.zipEntries.find((zipEntry) => zipEntry.name === utterancesEntryName)
       if (!utterancesEntry) {
         status(`User examples files not found for "${utt.name}", ignoring intent`)
@@ -359,14 +370,21 @@ const exportHandler = async ({ caps, getzip, agentzip, output, ...rest }, { utte
       fs.writeFileSync(output, agentZipBuffer)
       return { agentInfo: agent.agentInfo }
     } else {
-      const agentsClient = new dialogflow.AgentsClient(container.pluginInstance.sessionOpts)
-      const projectPath = agentsClient.projectPath(container.caps.DIALOGFLOW_PROJECT_ID)
-      const agentResponses = await agentsClient.getAgent({ parent: projectPath })
-      const newAgentInfo = agentResponses[0]
-      const restoreResponses = await agentsClient.restoreAgent({ parent: newAgentInfo.parent, agentContent: agentZipBuffer })
-      await restoreResponses[0].promise()
-      status(`Uploaded Dialogflow Agent to ${projectPath}`, newAgentInfo)
-      return { agentInfo: newAgentInfo }
+      try {
+        debug('Building Dialogflow Connection with sessionOpts', container.pluginInstance.sessionOpts)
+        const agentsClient = new dialogflow.AgentsClient(container.pluginInstance.sessionOpts)
+        debug('Building Dialogflow Connection with projectPath', container.pluginInstance.caps.DIALOGFLOW_PROJECT_ID)
+        const projectPath = agentsClient.projectPath(container.pluginInstance.caps.DIALOGFLOW_PROJECT_ID)
+        const agentResponses = await agentsClient.getAgent({ parent: projectPath })
+        const newAgentInfo = agentResponses[0]
+        debug('Uploading and restoring Dialogflow agent', newAgentInfo)
+        const restoreResponses = await agentsClient.restoreAgent({ parent: newAgentInfo.parent, agentContent: agentZipBuffer })
+        await restoreResponses[0].promise()
+        status(`Uploaded Dialogflow Agent to ${projectPath}`, newAgentInfo)
+        return { agentInfo: newAgentInfo }
+      } catch (err) {
+        throw new Error(`Dialogflow agent connection failed: ${util.inspect(err)}`)
+      }
     }
   } finally {
     if (container) {
