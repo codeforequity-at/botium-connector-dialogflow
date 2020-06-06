@@ -69,7 +69,9 @@ class BotiumConnectorDialogflow {
   Build () {
     debug('Build called')
 
-    this.sessionOpts = {}
+    this.sessionOpts = {
+      fallback: true
+    }
 
     if (this.caps[Capabilities.DIALOGFLOW_CLIENT_EMAIL] && this.caps[Capabilities.DIALOGFLOW_PRIVATE_KEY]) {
       this.sessionOpts.credentials = {
