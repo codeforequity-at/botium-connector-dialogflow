@@ -213,14 +213,20 @@ class BotiumConnectorDialogflow {
         const audioAttachment = this._getAudioOutput(response)
         const attachments = audioAttachment ? [audioAttachment] : []
 
-        let fulfillmentMessages = response.queryResult.fulfillmentMessages.filter(f =>
-          (this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM] && f.platform === this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM]) ||
-          (!this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM] && (f.platform === 'PLATFORM_UNSPECIFIED' || !f.platform))
-        )
+        const outputPlatform = this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM]
+        const ffSrc = JSON.parse(JSON.stringify(response.queryResult.fulfillmentMessages))
+        let fulfillmentMessages = ffSrc.filter(f => {
+          if (outputPlatform && f.platform === outputPlatform) {
+            return true
+          } else if (!outputPlatform && (f.platform === 'PLATFORM_UNSPECIFIED' || !f.platform)) {
+            return true
+          }
+          return false
+        })
 
         // use default if platform specific is not found
-        if (!fulfillmentMessages.length && this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM]) {
-          fulfillmentMessages = response.queryResult.fulfillmentMessages.filter(f =>
+        if (fulfillmentMessages.length === 0 && outputPlatform) {
+          fulfillmentMessages = ffSrc.filter(f =>
             (f.platform === 'PLATFORM_UNSPECIFIED' || !f.platform))
         }
 
