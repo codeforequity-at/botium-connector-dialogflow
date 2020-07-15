@@ -98,7 +98,8 @@ const trainIntentUtterances = async ({ caps }, intents, { origAgentInfo }) => {
 
     const newAgentData = {
       parent: projectPathNLP,
-      enableLogging: true
+      enableLogging: true,
+      timeZone: 'Europe/Madrid'
     }
     if (origAgentInfo) {
       Object.assign(newAgentData, {
@@ -122,6 +123,10 @@ const trainIntentUtterances = async ({ caps }, intents, { origAgentInfo }) => {
     const agentZip = new JSZip()
     agentZip.file('package.json', jsonBuffer({
       version: '1.0.0'
+    }))
+    agentZip.file('agent.json', jsonBuffer({
+      language: newAgentData.defaultLanguageCode,
+      defaultTimezone: newAgentData.timeZone
     }))
     const agentZipIntentFolder = agentZip.folder('intents')
     for (const intent of (intents || [])) {
