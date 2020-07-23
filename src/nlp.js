@@ -40,6 +40,7 @@ const extractIntentUtterances = async ({ caps }) => {
     const projectPath = agentsClient.projectPath(container.caps.DIALOGFLOW_PROJECT_ID)
     const { unzip, zipEntries, agentInfo } = await loadAgentZip(agentsClient, projectPath)
     debug(`Dialogflow agent: ${JSON.stringify(agentInfo, null, 2)}`)
+    debug(`Dialogflow agent files: ${JSON.stringify(zipEntries.map(z => z.name), null, 2)}`)
 
     const languageCodeBotium = container.pluginInstance.caps.DIALOGFLOW_LANGUAGE_CODE.toLowerCase()
     const languageCodeAgent = agentInfo.defaultLanguageCode
@@ -49,8 +50,8 @@ const extractIntentUtterances = async ({ caps }) => {
     const intentEntries = zipEntries.filter((zipEntry) => zipEntry.name.startsWith('intent') && !zipEntry.name.match('usersays'))
     for (const zipEntry of intentEntries) {
       const intent = JSON.parse(await unzip.file(zipEntry.name).async('string'))
-      if (intent.parentId) return
-      if (intent.contexts && intent.contexts.length > 0) return
+      if (intent.parentId) continue
+      if (intent.contexts && intent.contexts.length > 0) continue
 
       const utterancesEntryName1 = zipEntry.name.replace('.json', '') + '_usersays_' + languageCodeBotium + '.json'
       const utterancesEntryName2 = zipEntry.name.replace('.json', '') + '_usersays_' + languageCodeAgent + '.json'
@@ -63,15 +64,15 @@ const extractIntentUtterances = async ({ caps }) => {
       }
       if (!utterancesEntryName) {
         debug(`Utterances files not found for ${intent.name}, checking for utterances in ${utterancesEntryName1} and ${utterancesEntryName2}. Ignoring intent.`)
-        return
-      }
-      const utterancesEntry = JSON.parse(await unzip.file(utterancesEntryName).async('string'))
-      const inputUtterances = utterancesEntry.map((utterance) => utterance.data.reduce((accumulator, currentValue) => accumulator + '' + currentValue.text, ''))
+      } else {
+        const utterancesEntry = JSON.parse(await unzip.file(utterancesEntryName).async('string'))
+        const inputUtterances = utterancesEntry.map((utterance) => utterance.data.reduce((accumulator, currentValue) => accumulator + '' + currentValue.text, ''))
 
-      intents.push({
-        intentName: intent.name,
-        utterances: inputUtterances
-      })
+        intents.push({
+          intentName: intent.name,
+          utterances: inputUtterances
+        })
+      }
     }
     return {
       intents,
