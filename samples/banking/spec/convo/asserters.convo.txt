@@ -2,6 +2,7 @@ asserters
 
 #me
 hello
+UPDATE_CUSTOM SET_DIALOGFLOW_QUERYPARAMS|payload|{"key": "value"}
 
 #bot
 Hello

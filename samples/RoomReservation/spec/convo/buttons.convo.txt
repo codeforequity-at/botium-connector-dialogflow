@@ -7,7 +7,7 @@ buttons
 BUTTONS QuickReply1|QuickReply2|QuickReply3
 
 #me
-BUTTON QuickReply1
+BUTTON { "name": "QuickReply1", "parameters": { "param1": "value1" } }
 
 #bot
 You selected QuickReply1

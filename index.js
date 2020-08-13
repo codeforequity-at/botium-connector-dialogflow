@@ -138,6 +138,9 @@ class BotiumConnectorDialogflow {
       try {
         payload = JSON.parse(payload)
         request.queryInput.event = Object.assign({}, { languageCode: this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE] }, payload)
+        if (request.queryInput.event.parameters) {
+          request.queryInput.event.parameters = structjson.jsonToStructProto(request.queryInput.event.parameters)
+        }
       } catch (err) {
         request.queryInput.event = {
           name: payload,
@@ -191,6 +194,10 @@ class BotiumConnectorDialogflow {
     }
 
     request.queryParams = Object.assign({}, this.queryParams, mergeQueryParams)
+    if (request.queryParams.payload) {
+      request.queryParams.payload = structjson.jsonToStructProto(request.queryParams.payload)
+    }
+
     debug(`dialogflow request: ${JSON.stringify(_.omit(request, ['inputAudio']), null, 2)}`)
     msg.sourceData = request
 
