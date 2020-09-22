@@ -1,6 +1,5 @@
 const util = require('util')
 const fs = require('fs')
-const path = require('path')
 const JSZip = require('jszip')
 const dialogflow = require('@google-cloud/dialogflow')
 const _ = require('lodash')
@@ -239,11 +238,6 @@ const loadAgentZip = async (filenameOrRawData) => {
 
 const importDialogflow = async (argv, status, importFunction) => {
   const caps = argv.caps || {}
-  if (argv.agentzip) {
-    caps[botium.Capabilities.CONTAINERMODE] = () => ({ UserSays: () => {} })
-  } else {
-    caps[botium.Capabilities.CONTAINERMODE] = path.resolve(__dirname, '..', 'index.js')
-  }
   const driver = new botium.BotDriver(caps)
   const container = await driver.Build()
 
@@ -302,11 +296,6 @@ const importHandler = async (argv, status) => {
 
 const exportHandler = async ({ caps, getzip, agentzip, output, ...rest }, { utterances, convos }, { statusCallback }) => {
   caps = caps || {}
-  if (agentzip) {
-    caps[botium.Capabilities.CONTAINERMODE] = () => ({ UserSays: () => {} })
-  } else {
-    caps[botium.Capabilities.CONTAINERMODE] = path.resolve(__dirname, '..', 'index.js')
-  }
   const driver = new botium.BotDriver(caps)
   const container = await driver.Build()
 
