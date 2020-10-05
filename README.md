@@ -103,14 +103,28 @@ For getting help on the available CLI options and switches, run:
 
 When using BotiumScript, you can do assertions on and manipulation of the [Dialogflow context variables](https://cloud.google.com/dialogflow/docs/contexts-overview).
 
-### Asserting context variables
+### Asserting context and context parameters
 
 For asserting existance of context variables, you can use the [JSON_PATH asserter](https://botium.atlassian.net/wiki/spaces/BOTIUM/pages/59113473/JSONPath+Asserter):
 
-    #bot
-    JSON_PATH $.outputContexts[0].name|testsession
+**Assert output context name**
 
-With similar asserter usage, you can check for lifespan and context parameters as well.
+    #bot
+    JSON_PATH $.outputContexts[0].name|*testsession*
+
+_Use the ***** for wildcard matching_
+
+**Assert context parameter "myparameter" for output context named "mycontext"**
+
+    #bot
+    JSON_PATH $.outputContexts[?(@.name.indexOf('mycontext') >= 0)].parameters.myparameter|somevalue
+
+_Use the JSONPath filer for matching a context by name instead of index_
+
+**Assert lifespan for output context named "mycontext"**
+
+    #bot
+    JSON_PATH $.outputContexts[?(@.name.indexOf('mycontext') >= 0 && @.lifespanCount > 2)]
 
 ### Adding context variables
 
