@@ -204,12 +204,12 @@ class BotiumConnectorDialogflow {
     return this.sessionClient.detectIntent(request)
       .then((responses) => {
         this.queryParams.contexts = []
-        const response = responses[0]
+        const apiResponse = responses[0]
+        const response = JSON.parse(JSON.stringify(apiResponse))
 
-        response.queryResult.outputContexts.forEach(context => {
-          context.parameters = structjson.jsonToStructProto(
-            structjson.structProtoToJson(context.parameters)
-          )
+        response.queryResult.outputContexts = []
+        apiResponse.queryResult.outputContexts.forEach(context => {
+          response.queryResult.outputContexts.push({ ...context, parameters: structjson.structProtoToJson(context.parameters) })
         })
         debug(`dialogflow response: ${JSON.stringify(_.omit(response, ['outputAudio']), null, 2)}`)
 
