@@ -34,9 +34,7 @@ const Defaults = {
   [Capabilities.DIALOGFLOW_FORCE_INTENT_RESOLUTION]: true,
   [Capabilities.DIALOGFLOW_BUTTON_EVENTS]: true,
   [Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE]: false,
-  [Capabilities.DIALOGFLOW_FALLBACK_INTENTS]: ['Default Fallback Intent'],
-  [Capabilities.DIALOGFLOW_AUDIOINPUT_ENCODING]: 'AUDIO_ENCODING_LINEAR_16',
-  [Capabilities.DIALOGFLOW_AUDIOINPUT_SAMPLERATEHERTZ]: 16000
+  [Capabilities.DIALOGFLOW_FALLBACK_INTENTS]: ['Default Fallback Intent']
 }
 
 class BotiumConnectorDialogflow {
@@ -158,7 +156,9 @@ class BotiumConnectorDialogflow {
       request.queryInput.audioConfig = {
         audioEncoding: this.caps[Capabilities.DIALOGFLOW_AUDIOINPUT_ENCODING],
         sampleRateHertz: this.caps[Capabilities.DIALOGFLOW_AUDIOINPUT_SAMPLERATEHERTZ],
-        languageCode: this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE]
+        languageCode: this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE],
+        audioChannelCount: this.caps[Capabilities.DIALOGFLOW_AUDIOINPUT_CHANNELS],
+        enableSeparateRecognitionPerChannel: this.caps[Capabilities.DIALOGFLOW_AUDIOINPUT_RECOGNITION_PER_CHANNEL]
       }
       request.inputAudio = media.buffer
 
@@ -204,12 +204,12 @@ class BotiumConnectorDialogflow {
     return this.sessionClient.detectIntent(request)
       .then((responses) => {
         this.queryParams.contexts = []
-        const apiResponse = responses[0]
-        const response = JSON.parse(JSON.stringify(apiResponse))
+        const response = responses[0]
 
-        response.queryResult.outputContexts = []
-        apiResponse.queryResult.outputContexts.forEach(context => {
-          response.queryResult.outputContexts.push({ ...context, parameters: structjson.structProtoToJson(context.parameters) })
+        response.queryResult.outputContexts.forEach(context => {
+          context.parameters = structjson.jsonToStructProto(
+            structjson.structProtoToJson(context.parameters)
+          )
         })
         debug(`dialogflow response: ${JSON.stringify(_.omit(response, ['outputAudio']), null, 2)}`)
 

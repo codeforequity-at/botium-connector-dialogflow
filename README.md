@@ -176,20 +176,20 @@ If not given, [Google default authentication](https://cloud.google.com/docs/auth
 
 ### DIALOGFLOW_LANGUAGE_CODE
 
-The language of this conversational query. See [all languages](https://dialogflow.com/docs/reference/language). 
-A Dialogflow Agent is multilingiual, Connector is not. But you can use more botium.json for each language. 
+The language of this conversational query. See [all languages](https://dialogflow.com/docs/reference/language).
+A Dialogflow Agent is multilingiual, Connector is not. But you can use more botium.json for each language.
 (Botium Box, or Botium CLI is recommended in this case. Botium Bindings does not support more botium.xml)
 
 ### DIALOGFLOW_OUTPUT_PLATFORM
 
-Set the chat platform to get platform dependent response. See [all platforms](https://dialogflow.com/docs/reference/message-objects#text_response_2) 
+Set the chat platform to get platform dependent response. See [all platforms](https://dialogflow.com/docs/reference/message-objects#text_response_2)
 If you have multi platform dependent conversation, then it is the same situation as DIALOGFLOW_LANGUAGE_CODE
 
 ### DIALOGFLOW_FORCE_INTENT_RESOLUTION
 
-Experimental capability. 
+Experimental capability.
 
-From a Dialogflow response the Connector can extract zero, one, or more messages. Every message will got the NLP information like intent and entities from the Dialogflow response. 
+From a Dialogflow response the Connector can extract zero, one, or more messages. Every message will got the NLP information like intent and entities from the Dialogflow response.
 If Connector extracts zero messages, then creates a dummy one, to hold the NLP information. With this flag you can turn off this feature.
 
 Default _true_
@@ -203,7 +203,7 @@ By setting this capability to _false_ this behaviour can be disabled and a butto
 
 ### DIALOGFLOW_INPUT_CONTEXT_NAME(_X)
 
-You can use [Contexts](https://dialogflow.com/docs/contexts). They can be useful if you dont want to start the conversation from beginning, 
+You can use [Contexts](https://dialogflow.com/docs/contexts). They can be useful if you dont want to start the conversation from beginning,
 or you can set a context parameter “testmode” to make the web api behind the fulfillment react in a different way than in normal mode.
 
 If you are using more context parameters then you have to use more Capabilities. Use a name, or number as suffix to distinguish them. (Like DIALOGFLOW_INPUT_CONTEXT_NAME_EMAIL).  
@@ -212,7 +212,7 @@ This Capability contains the name of the parameter.
 
 See also the [Sample botium.json](./samples/RoomReservation/botium-contexts.json)
 
- 
+
 ### DIALOGFLOW_INPUT_CONTEXT_LIFESPAN(_X)
 
 The number of queries this parameter will remain active after being invoked.
@@ -237,7 +237,7 @@ This Capability enables support for [Dialogflow Knowledge Connectors](https://cl
 ### DIALOGFLOW_FALLBACK_INTENTS
 _Default: ['Default Fallback Intent']_
 
-As default the not recognized utterance will be categorized as _Default Fallback Intent_ by Dialogflow. 
+As default the not recognized utterance will be categorized as _Default Fallback Intent_ by Dialogflow.
 If you change this behavior, you can inform connector about it. Used just for analyzation.   
 
 ## Additional Capabilities for NLP Analytics
@@ -255,6 +255,26 @@ Google client email.
 ### DIALOGFLOW_NLP_PRIVATE_KEY
 
 Google private key.
+
+## Additional Capabilities for Audio Input (Speech Recognition)
+
+For more details about audio configuration, go [here](https://cloud.google.com/speech-to-text/docs/encoding?hl=de).  
+
+### DIALOGFLOW_AUDIOINPUT_ENCODING
+
+Audio File Encoding
+
+### DIALOGFLOW_AUDIOINPUT_SAMPLERATEHERTZ
+
+Audio File Sample Rate in Hertz
+
+### DIALOGFLOW_AUDIOINPUT_CHANNELS
+
+Audio File - Count of Channels
+
+### DIALOGFLOW_AUDIOINPUT_RECOGNITION_PER_CHANNEL
+
+Audio File - Separate Recognition per Channel
 
 ## Open Issues and Restrictions
 * Account Linking is not supported (Consider using [Botium Connector for Google Assistant](https://github.com/codeforequity-at/botium-connector-google-assistant) if you want to test it)
