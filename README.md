@@ -8,11 +8,6 @@
 
 This is a [Botium](https://github.com/codeforequity-at/botium-core) connector for testing your Dialogflow Agents.
 
-**UPDATE 2020/06/15:** As Chatbots grow in importance, automated testing solutions will remain critical for ensuring that Chatbots actually do what their designers intend. We've been busy working on a product that allows testers to have visual insights and deeper understanding in their Chatbot's performance, offering several solutions to boost their interaction!
-[Botium Coach will be introduced to the market as part of our online event on the 24th of June.](https://www.botium.ai/coach/)
-
-[![](http://img.youtube.com/vi/WsNaDfZ7WHk/0.jpg)](http://www.youtube.com/watch?v=WsNaDfZ7WHk "Botium Coach is coming on 24th of June")
-
 __Did you read the [Botium in a Nutshell](https://medium.com/@floriantreml/botium-in-a-nutshell-part-1-overview-f8d0ceaf8fb4) articles ? Be warned, without prior knowledge of Botium you won't be able to properly use this library!__
 
 ## How it works ?
@@ -21,9 +16,9 @@ Botium runs your conversations against the Dialogflow API.
 It can be used as any other Botium connector with all Botium Stack components:
   * [Botium CLI](https://github.com/codeforequity-at/botium-cli/)
   * [Botium Bindings](https://github.com/codeforequity-at/botium-bindings/)
-  * [Botium Box](https://www.botium.at)
+  * [Botium Box](https://www.botium.ai)
 
-Extracts Button, Media, Card, and NLP information (intent, entities) from Chatbot API response. Accordingly it is possible to use a corresponding [Botium Asserter](https://botium.atlassian.net/wiki/spaces/BOTIUM/pages/2293815/Botium+Asserters).
+Extracts Button, Media, Card, and NLP information (intent, entities) from Chatbot API response. Accordingly it is possible to use a corresponding [Botium Asserter](https://botium-docs.readthedocs.io/en/latest/05_botiumscript/index.html#using-asserters).
 
 ## Requirements
 
@@ -79,7 +74,7 @@ To check the configuration, run the emulator (Botium CLI required) to bring up a
 > botium-cli emulator
 ```
 
-Botium setup is ready, you can begin to write your [BotiumScript](https://github.com/codeforequity-at/botium-core/wiki/Botium-Scripting) files.
+Botium setup is ready, you can begin to write your [BotiumScript](https://botium-docs.readthedocs.io/en/latest/05_botiumscript/index.html#) files.
 
 ## Using the botium-connector-dialogflow-cli
 
@@ -105,7 +100,7 @@ When using BotiumScript, you can do assertions on and manipulation of the [Dialo
 
 ### Asserting context and context parameters
 
-For asserting existance of context variables, you can use the [JSON_PATH asserter](https://botium.atlassian.net/wiki/spaces/BOTIUM/pages/59113473/JSONPath+Asserter):
+For asserting existance of context variables, you can use the [JSON_PATH asserter](https://botium-docs.readthedocs.io/en/latest/05_botiumscript/index.html#jsonpath-asserter):
 
 **Assert output context name**
 
@@ -128,7 +123,7 @@ _Use the JSONPath filer for matching a context by name instead of index_
 
 ### Adding context variables
 
-For adding a context variable, you have to use the [UPDATE_CUSTOM logic hook](https://botium.atlassian.net/wiki/spaces/BOTIUM/pages/48660497/Integrated+Logic+Hooks). This example will set two context variables, one with some parameters:
+For adding a context variable, you have to use the [UPDATE_CUSTOM logic hook](https://botium-docs.readthedocs.io/en/latest/05_botiumscript/index.html#update-custom). This example will set two context variables, one with some parameters:
 
     #me
     heyo
@@ -142,7 +137,7 @@ The parameters are:
 
 ## Dialogflow Query Parameters
 
-When using BotiumScript, you can do manipulation of the [Dialogflow query parameters](https://cloud.google.com/dialogflow/docs/reference/rest/v2beta1/QueryParameters).You have to use the [UPDATE_CUSTOM logic hook](https://botium.atlassian.net/wiki/spaces/BOTIUM/pages/48660497/Integrated+Logic+Hooks). This example will add a _payload_ field with some JSON content in the query parameters:
+When using BotiumScript, you can do manipulation of the [Dialogflow query parameters](https://cloud.google.com/dialogflow/docs/reference/rest/v2beta1/QueryParameters).You have to use the [UPDATE_CUSTOM logic hook](https://botium-docs.readthedocs.io/en/latest/05_botiumscript/index.html#update-custom). This example will add a _payload_ field with some JSON content in the query parameters:
 
     #me
     heyo
