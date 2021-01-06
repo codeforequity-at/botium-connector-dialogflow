@@ -1,0 +1,12 @@
+audio
+
+#me
+MEDIA bookroom.wav
+
+#bot
+In what city would you like to reserve a room?
+
+#me
+London
+
+#bot

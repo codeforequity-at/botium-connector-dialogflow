@@ -1,0 +1,20 @@
+{
+  "botium": {
+    "Capabilities": {
+      "PROJECTNAME": "Botium Audio Sample",
+      "CONTAINERMODE": "dialogflow",
+      "DIALOGFLOW_PROJECT_ID": "botiumdemoroomreservation-jfdm",
+      "DIALOGFLOW_AUDIOINPUT_ENCODING": "AUDIO_ENCODING_LINEAR_16",
+      "DIALOGFLOW_AUDIOINPUT_SAMPLERATEHERTZ": 16000,
+      "USER_INPUTS": [
+        {
+          "ref": "MEDIA",
+          "src": "MediaInput",
+          "args": {
+            "downloadMedia": true
+          }
+        }
+      ]    
+    }
+  }
+}

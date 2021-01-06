@@ -1,0 +1,20 @@
+{
+  "name": "samples",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "mocha spec"
+  },
+  "botium": {
+    "convodirs": [
+      "spec/convo"
+    ],
+    "expandConvos": true,
+    "expandUtterancesToConvos": false
+  },
+  "devDependencies": {
+    "botium-bindings": "latest",
+    "botium-connector-dialogflow": "../..",
+    "cross-env": "latest",
+    "mocha": "latest"
+  }
+}

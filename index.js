@@ -335,15 +335,16 @@ class BotiumConnectorDialogflow {
 
   _getAudioOutput (response) {
     if (response.outputAudio && response.outputAudioConfig) {
+      const acSrc = JSON.parse(JSON.stringify(response.outputAudioConfig))
       const attachment = {
       }
-      if (response.outputAudioConfig.audioEncoding === 'OUTPUT_AUDIO_ENCODING_LINEAR_16') {
+      if (acSrc.audioEncoding === 'OUTPUT_AUDIO_ENCODING_LINEAR_16') {
         attachment.name = 'output.wav'
         attachment.mimeType = 'audio/wav'
-      } else if (response.outputAudioConfig.audioEncoding === 'OUTPUT_AUDIO_ENCODING_MP3') {
+      } else if (acSrc.audioEncoding === 'OUTPUT_AUDIO_ENCODING_MP3') {
         attachment.name = 'output.mp3'
         attachment.mimeType = 'audio/mpeg3'
-      } else if (response.outputAudioConfig.audioEncoding === 'OUTPUT_AUDIO_ENCODING_OGG_OPUS') {
+      } else if (acSrc.audioEncoding === 'OUTPUT_AUDIO_ENCODING_OGG_OPUS') {
         attachment.name = 'output.ogg'
         attachment.mimeType = 'audio/ogg'
       }
