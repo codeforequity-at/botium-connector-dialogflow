@@ -349,7 +349,7 @@ class BotiumConnectorDialogflow {
         attachment.mimeType = 'audio/ogg'
       }
       if (attachment.name) {
-        attachment.base64 = response.outputAudio.toString('base64')
+        attachment.base64 = Buffer.from(response.outputAudio).toString('base64')
         return attachment
       }
     }
