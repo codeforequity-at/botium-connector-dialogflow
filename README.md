@@ -271,6 +271,25 @@ Audio File - Count of Channels
 
 Audio File - Separate Recognition per Channel
 
+### DIALOGFLOW_API_ENDPOINT
+
+By default the Dialogflow connector only works with the US (Global) region of Dialogflow, however it can be configured to connect to a region specific version of Dialogflow.  This requires setting the project ID to include the location AND setting a custom API Endpoint for the specific region dialogflow instance.   In this example configuration, an example of the dialogflow region would be `australia-southeast1`.  List of available regions: https://cloud.google.com/dialogflow/es/docs/how/region
+
+```
+{
+  "botium": {
+    "Capabilities": {
+      "PROJECTNAME": "<whatever>",
+      "CONTAINERMODE": "dialogflow",
+      "DIALOGFLOW_PROJECT_ID": "<google project id>/locations/<dialogflow region>",
+      "DIALOGFLOW_CLIENT_EMAIL": "<service credentials email>",
+      "DIALOGFLOW_PRIVATE_KEY": "<service credentials private key>",
+      "DIALOGFLOW_API_ENDPOINT": "<dialogflow region>-dialogflow.googleapis.com"
+    }
+  }
+}
+```
+
 ## Open Issues and Restrictions
 * Account Linking is not supported (Consider using [Botium Connector for Google Assistant](https://github.com/codeforequity-at/botium-connector-google-assistant) if you want to test it)
 * Not [all](https://cloud.google.com/dialogflow-enterprise/docs/reference/rest/v2/projects.agent.intents#Message) dialogflow response is supported, just

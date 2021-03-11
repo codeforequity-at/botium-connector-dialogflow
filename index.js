@@ -26,7 +26,8 @@ const Capabilities = {
   DIALOGFLOW_ENABLE_KNOWLEDGEBASE: 'DIALOGFLOW_ENABLE_KNOWLEDGEBASE',
   DIALOGFLOW_FALLBACK_INTENTS: 'DIALOGFLOW_FALLBACK_INTENTS',
   DIALOGFLOW_AUDIOINPUT_ENCODING: 'DIALOGFLOW_AUDIOINPUT_ENCODING',
-  DIALOGFLOW_AUDIOINPUT_SAMPLERATEHERTZ: 'DIALOGFLOW_AUDIOINPUT_SAMPLERATEHERTZ'
+  DIALOGFLOW_AUDIOINPUT_SAMPLERATEHERTZ: 'DIALOGFLOW_AUDIOINPUT_SAMPLERATEHERTZ',
+  DIALOGFLOW_API_ENDPOINT: 'DIALOGFLOW_API_ENDPOINT'
 }
 
 const Defaults = {
@@ -78,6 +79,10 @@ class BotiumConnectorDialogflow {
       }
     }
 
+    if (this.caps[Capabilities.DIALOGFLOW_API_ENDPOINT]) {
+      this.sessionOpts.apiEndpoint = this.caps[Capabilities.DIALOGFLOW_API_ENDPOINT];
+    }
+
     return Promise.resolve()
   }
 
@@ -104,6 +109,9 @@ class BotiumConnectorDialogflow {
       debug(`Using Dialogflow Knowledge Bases ${util.inspect(this.kbNames)}, switching to v2beta1 version of Dialogflow API`)
       this.sessionClient = new dialogflow.v2beta1.SessionsClient(this.sessionOpts)
       this.queryParams.knowledgeBaseNames = this.kbNames
+    } else if (this.caps[Capabilities.DIALOGFLOW_API_ENDPOINT] != null) {
+      debug(`Using custom api endpoint (for localized dialogflow), switching to v2beta1 version of Dialogflow API`)
+      this.sessionClient = new dialogflow.v2beta1.SessionsClient(this.sessionOpts)
     } else {
       this.sessionClient = new dialogflow.SessionsClient(this.sessionOpts)
     }
