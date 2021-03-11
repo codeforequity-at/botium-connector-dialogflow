@@ -80,7 +80,7 @@ class BotiumConnectorDialogflow {
     }
 
     if (this.caps[Capabilities.DIALOGFLOW_API_ENDPOINT]) {
-      this.sessionOpts.apiEndpoint = this.caps[Capabilities.DIALOGFLOW_API_ENDPOINT];
+      this.sessionOpts.apiEndpoint = this.caps[Capabilities.DIALOGFLOW_API_ENDPOINT]
     }
 
     return Promise.resolve()
@@ -105,12 +105,16 @@ class BotiumConnectorDialogflow {
       this.kbNames = this.caps[Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE]
     }
 
+    let useBeta = false
     if (this.kbNames && this.kbNames.length > 0) {
       debug(`Using Dialogflow Knowledge Bases ${util.inspect(this.kbNames)}, switching to v2beta1 version of Dialogflow API`)
-      this.sessionClient = new dialogflow.v2beta1.SessionsClient(this.sessionOpts)
       this.queryParams.knowledgeBaseNames = this.kbNames
-    } else if (this.caps[Capabilities.DIALOGFLOW_API_ENDPOINT] != null) {
-      debug(`Using custom api endpoint (for localized dialogflow), switching to v2beta1 version of Dialogflow API`)
+      useBeta = true
+    } else if (!_.isNil(this.caps[Capabilities.DIALOGFLOW_API_ENDPOINT])) {
+      debug('Using custom api endpoint (for localized dialogflow), switching to v2beta1 version of Dialogflow API')
+      useBeta = true
+    }
+    if (useBeta) {
       this.sessionClient = new dialogflow.v2beta1.SessionsClient(this.sessionOpts)
     } else {
       this.sessionClient = new dialogflow.SessionsClient(this.sessionOpts)
