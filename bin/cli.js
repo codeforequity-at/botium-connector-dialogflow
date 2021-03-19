@@ -108,7 +108,7 @@ yargsCmd.usage('Botium Connector Dialogflow CLI\n\nUsage: $0 [options]') // esli
       const utterances = Object.keys(compiler.utterances).reduce((acc, u) => acc.concat([compiler.utterances[u]]), [])
 
       try {
-        const result = await exportHandler(argv, { convos, utterances }, { statusCallback: (log, obj) => console.log(log, obj) })
+        const result = await exportHandler(argv, { convos, utterances }, { statusCallback: (log, obj) => obj ? console.log(log, obj) : console.log(log) })
         console.log(JSON.stringify(result, null, 2))
       } catch (err) {
         console.log(`FAILED: ${err.message}`)

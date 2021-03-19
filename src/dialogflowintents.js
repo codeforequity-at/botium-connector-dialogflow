@@ -7,21 +7,35 @@ const botium = require('botium-core')
 const { convertToDialogflowUtterance, jsonBuffer } = require('./helpers')
 const debug = require('debug')('botium-connector-dialogflow-intents')
 
-const getUserSaysEntryNameForZipEntry = (zipEntry, agentInfo) => {
-  const utterancesEntryName = zipEntry.name.replace('.json', '') + '_usersays_' + agentInfo.language + '.json'
+const getUserSaysEntryNameForZipEntry = (zipEntry, language) => {
+  const utterancesEntryName = zipEntry.name.replace('.json', '') + '_usersays_' + language + '.json'
   return utterancesEntryName
 }
-const getUserSaysEntryNameForIntent = (intentName, agentInfo) => {
+const getUserSaysEntryNameForIntent = (intentName, language) => {
   const filePrefix = intentName.replace(/:/g, '_')
-  const utterancesEntryName = `intents/${filePrefix}_usersays_${agentInfo.language}.json`
+  const utterancesEntryName = `intents/${filePrefix}_usersays_${language}.json`
   return utterancesEntryName
+}
+
+const selectLanguage = (agentInfo, caps) => {
+  const agentLanguages = [agentInfo.language, ...(agentInfo.supportedLanguages || [])]
+
+  const capsLanguage = caps.DIALOGFLOW_LANGUAGE_CODE
+  if (capsLanguage) {
+    if (agentLanguages.includes(capsLanguage)) return capsLanguage
+    else throw new Error(`Language ${capsLanguage} not supported by this Dialogflow agent.`)
+  }
+  return agentInfo.language
 }
 
 const importIntents = async ({ agentInfo, zipEntries, unzip }, argv, { statusCallback }) => {
   const status = (log, obj) => {
-    debug(log, obj)
+    if (obj) debug(log, obj)
+    else debug(log)
     if (statusCallback) statusCallback(log, obj)
   }
+  const language = selectLanguage(agentInfo, argv.caps)
+  status(`Using Dialogflow language "${language}"`)
 
   const intentEntries = zipEntries.filter((zipEntry) => zipEntry.name.startsWith('intent') && !zipEntry.name.match('usersays'))
 
@@ -32,7 +46,7 @@ const importIntents = async ({ agentInfo, zipEntries, unzip }, argv, { statusCal
     const intent = JSON.parse(await unzip.file(zipEntry.name).async('string'))
     if (intent.parentId) continue
 
-    const utterancesEntryName = getUserSaysEntryNameForZipEntry(zipEntry, agentInfo)
+    const utterancesEntryName = getUserSaysEntryNameForZipEntry(zipEntry, language)
     debug(`Found root intent "${intent.name}", checking for utterances in ${utterancesEntryName}`)
     if (!zipEntries.find((zipEntry) => zipEntry.name === utterancesEntryName)) {
       status(`Utterances files not found for "${intent.name}", ignoring intent`)
@@ -98,6 +112,8 @@ const importConversations = async ({ agentInfo, zipEntries, unzip }, argv, { sta
     debug(log, obj)
     if (statusCallback) statusCallback(log, obj)
   }
+  const language = selectLanguage(agentInfo, argv.caps)
+  status(`Using Dialogflow language "${language}"`)
 
   const intentEntries = zipEntries.filter((zipEntry) => zipEntry.name.startsWith('intent') && !zipEntry.name.match('usersays'))
 
@@ -108,7 +124,7 @@ const importConversations = async ({ agentInfo, zipEntries, unzip }, argv, { sta
   for (const zipEntry of intentEntries) {
     const intent = JSON.parse(await unzip.file(zipEntry.name).async('string'))
 
-    const utterancesEntryName = getUserSaysEntryNameForZipEntry(zipEntry, agentInfo)
+    const utterancesEntryName = getUserSaysEntryNameForZipEntry(zipEntry, language)
     debug(`Found intent ${intent.name}, checking for utterances in ${utterancesEntryName}`)
     if (!zipEntries.find((zipEntry) => zipEntry.name === utterancesEntryName)) {
       status(`Utterances files not found for ${intent.name}, ignoring intent`)
@@ -268,7 +284,7 @@ const importDialogflow = async (argv, status, importFunction) => {
         throw new Error(`Dialogflow agent unpack failed: ${err && err.message}`)
       }
     }
-    const { convos, utterances } = await importFunction(agent, argv, status)
+    const { convos, utterances } = await importFunction(agent, { ...argv, caps: container.pluginInstance.caps }, status)
     return { convos, utterances }
   } finally {
     try {
@@ -300,7 +316,8 @@ const exportHandler = async ({ caps, getzip, agentzip, output, ...rest }, { utte
   const container = await driver.Build()
 
   const status = (log, obj) => {
-    debug(log, obj)
+    if (obj) debug(log, obj)
+    else debug(log)
     if (statusCallback) statusCallback(log, obj)
   }
 
@@ -332,14 +349,19 @@ const exportHandler = async ({ caps, getzip, agentzip, output, ...rest }, { utte
       }
     }
 
+    const language = selectLanguage(agent.agentInfo, container.pluginInstance.caps)
+    status(`Using Dialogflow language "${language}"`)
+
     for (const utt of utterances) {
-      const utterancesEntryName = getUserSaysEntryNameForIntent(utt.name, agent.agentInfo)
+      const utterancesEntryName = getUserSaysEntryNameForIntent(utt.name, language)
       const utterancesEntry = agent.zipEntries.find((zipEntry) => zipEntry.name === utterancesEntryName)
-      if (!utterancesEntry) {
-        status(`User examples files not found for "${utt.name}", ignoring intent`)
-        continue
+
+      let utterancesEntryContent = []
+      if (utterancesEntry) {
+        utterancesEntryContent = JSON.parse(await agent.unzip.file(utterancesEntryName).async('string'))
+      } else {
+        status(`User examples file ${utterancesEntryName} not found for "${utt.name}", creating a new one`)
       }
-      const utterancesEntryContent = JSON.parse(await agent.unzip.file(utterancesEntryName).async('string'))
 
       const agentExamples = utterancesEntryContent.map((utterance) => utterance.data.reduce((accumulator, currentValue) => accumulator + '' + currentValue.text, ''))
       const newExamples = utt.utterances.filter(u => !agentExamples.includes(u))
@@ -348,7 +370,7 @@ const exportHandler = async ({ caps, getzip, agentzip, output, ...rest }, { utte
       } else {
         status(`${newExamples.length} new user examples found for "${utt.name}", adding to agent`)
 
-        const newData = convertToDialogflowUtterance(newExamples, agent.agentInfo.language)
+        const newData = convertToDialogflowUtterance(newExamples, language)
         agent.unzip.file(utterancesEntryName, jsonBuffer(utterancesEntryContent.concat(newData)))
       }
     }
