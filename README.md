@@ -273,7 +273,7 @@ Audio File - Separate Recognition per Channel
 
 ### DIALOGFLOW_API_ENDPOINT
 
-By default the Dialogflow connector only works with the US (Global) region of Dialogflow, however it can be configured to connect to a region specific version of Dialogflow.  This requires setting the project ID to include the location AND setting a custom API Endpoint for the specific region dialogflow instance.   In this example configuration, an example of the dialogflow region would be `australia-southeast1`.  List of available regions: https://cloud.google.com/dialogflow/es/docs/how/region
+By default the Dialogflow connector only works with the US (Global) region of Dialogflow, however it can be configured to connect to a region specific version of Dialogflow. This requires setting the project ID to include the location AND setting a custom API Endpoint for the specific region dialogflow instance. In this example configuration, an example of the dialogflow region would be `australia-southeast1`. List of available regions: https://cloud.google.com/dialogflow/es/docs/how/region
 
 ```
 {

@@ -482,6 +482,50 @@ class BotiumConnectorDialogflow {
   }
 }
 
+const languagesList = [
+  'da',
+  'de',
+  'en',
+  'en-AU',
+  'en-CA',
+  'en-GB',
+  'en-IN',
+  'en-US',
+  'es',
+  'es-419',
+  'es-ES',
+  'fr',
+  'fr-CA',
+  'fr-FR',
+  'hi',
+  'id',
+  'it',
+  'ja',
+  'ko',
+  'nl',
+  'no',
+  'pt',
+  'pt-BR',
+  'ru',
+  'sv',
+  'th',
+  'uk',
+  'zh-CN',
+  'zh-HK',
+  'zh-TW'
+]
+
+const audioEncodingList = [
+  'AUDIO_ENCODING_UNSPECIFIED',
+  'AUDIO_ENCODING_LINEAR_16',
+  'AUDIO_ENCODING_FLAC',
+  'AUDIO_ENCODING_MULAW',
+  'AUDIO_ENCODING_AMR',
+  'AUDIO_ENCODING_AMR_WB',
+  'AUDIO_ENCODING_OGG_OPUS',
+  'AUDIO_ENCODING_SPEEX_WITH_HEADER_BYTE'
+]
+
 module.exports = {
   PluginVersion: 1,
   PluginClass: BotiumConnectorDialogflow,
@@ -497,5 +541,73 @@ module.exports = {
     ExtractIntentUtterances: extractIntentUtterances,
     TrainIntentUtterances: trainIntentUtterances,
     CleanupIntentUtterances: cleanupIntentUtterances
+  },
+  PluginDesc: {
+    name: 'Google Dialogflow ES',
+    provider: 'Google',
+    features: {
+      intentResolution: true,
+      intentConfidenceScore: true,
+      entityResolution: true,
+      testCaseGeneration: true,
+      testCaseExport: true,
+      audioInput: true,
+      supportedFileExtensions: ['.wav', '.pcm', '.m4a', '.flac', '.riff', '.wma', '.aac', '.ogg', '.oga', '.mp3', '.amr']
+    },
+    capabilities: [
+      {
+        name: 'DIALOGFLOW_API_ENDPOINT',
+        label: 'Dialogflow Region',
+        description: 'For more information on what region to use, consult the <a href="https://cloud.google.com/dialogflow/es/docs/how/region" target="_blank">Dialogflow Documentation</a>',
+        type: 'choice',
+        required: false,
+        advanced: true,
+        choices: [
+          { name: 'Europe/Belgium', key: 'europe-west1-dialogflow.googleapis.com' },
+          { name: 'Europe/London', key: 'europe-west2-dialogflow.googleapis.com' },
+          { name: 'Asia Pacific/Sydney', key: 'australia-southeast1-dialogflow.googleapis.com' },
+          { name: 'Asia Pacific/Tokyo', key: 'asia-northeast1-dialogflow.googleapis.com' },
+          { name: 'Global', key: 'global-dialogflow.googleapis.com' }
+        ]
+      },
+      {
+        name: 'DIALOGFLOW_LANGUAGE_CODE',
+        label: 'Language',
+        description: 'For more information about supported languages, consult the <a href="https://cloud.google.com/dialogflow/es/docs/reference/language" target="_blank">Dialogflow Documentation</a>',
+        type: 'choice',
+        required: true,
+        advanced: true,
+        choices: languagesList.map(l => ({ name: l, key: l }))
+      },
+      {
+        name: 'DIALOGFLOW_OUTPUT_PLATFORM',
+        label: 'Output Platform',
+        description: 'Find out more about integrations in the <a href="https://cloud.google.com/dialogflow/es/docs/intents-rich-messages" target="_blank">Dialogflow Documentation</a>',
+        type: 'choice',
+        required: true,
+        advanced: true,
+        choices: [
+          { name: 'Default platform', key: 'PLATFORM_UNSPECIFIED' },
+          { name: 'Facebook', key: 'FACEBOOK' },
+          { name: 'Slack', key: 'SLACK' },
+          { name: 'Telegram', key: 'TELEGRAM' },
+          { name: 'Kik', key: 'KIK' },
+          { name: 'Skype', key: 'SKYPE' },
+          { name: 'Line', key: 'LINE' },
+          { name: 'Viber', key: 'VIBER' },
+          { name: 'Google Assistant', key: 'ACTIONS_ON_GOOGLE' },
+          { name: 'Google Hangouts', key: 'GOOGLE_HANGOUTS' }
+        ]
+      },
+      {
+        name: 'DIALOGFLOW_AUDIOINPUT_ENCODING',
+        label: 'Audio Input Encoding',
+        description: 'Details about audio encodings are available in the <a href="https://cloud.google.com/dialogflow/es/docs/reference/rest/v2/QueryInput#AudioEncoding" target="_blank">Dialogflow Documentation</a>',
+        type: 'choice',
+        required: true,
+        advanced: true,
+        choices: audioEncodingList.map(l => ({ name: l, key: l }))
+      }
+    ]
   }
 }
