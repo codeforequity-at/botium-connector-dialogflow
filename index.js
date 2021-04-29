@@ -263,6 +263,7 @@ class BotiumConnectorDialogflow {
               mimeType: mime.lookup(fulfillmentMessage.image.imageUri) || 'application/unknown'
             }]
           } else if (fulfillmentMessage.quickReplies) {
+            botMsg.messageText = fulfillmentMessage.quickReplies.title
             botMsg.buttons = fulfillmentMessage.quickReplies.quickReplies.map((q) => ({ text: q }))
           } else if (fulfillmentMessage.card) {
             botMsg.messageText = fulfillmentMessage.card.title
