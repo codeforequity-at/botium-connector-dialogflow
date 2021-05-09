@@ -1,6 +1,6 @@
 {
   "name": "botium-connector-dialogflow",
-  "version": "0.0.27",
+  "version": "0.0.28",
   "description": "Botium Connector for Google Dialogflow",
   "main": "dist/botium-connector-dialogflow-cjs.js",
   "module": "dist/botium-connector-dialogflow-es.js",
