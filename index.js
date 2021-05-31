@@ -110,7 +110,7 @@ class BotiumConnectorDialogflow {
       debug(`Using Dialogflow Knowledge Bases ${util.inspect(this.kbNames)}, switching to v2beta1 version of Dialogflow API`)
       this.queryParams.knowledgeBaseNames = this.kbNames
       useBeta = true
-    } else if (!_.isNil(this.caps[Capabilities.DIALOGFLOW_API_ENDPOINT])) {
+    } else if (this.caps[Capabilities.DIALOGFLOW_API_ENDPOINT]) {
       debug('Using custom api endpoint (for localized dialogflow), switching to v2beta1 version of Dialogflow API')
       useBeta = true
     }
@@ -218,11 +218,13 @@ class BotiumConnectorDialogflow {
         this.queryParams.contexts = []
         const response = responses[0]
 
-        response.queryResult.outputContexts.forEach(context => {
-          context.parameters = structjson.jsonToStructProto(
-            structjson.structProtoToJson(context.parameters)
-          )
-        })
+        if (response.queryResult.outputContexts) {
+          response.queryResult.outputContexts.forEach(context => {
+            context.parameters = structjson.jsonToStructProto(
+              structjson.structProtoToJson(context.parameters)
+            )
+          })
+        }
         debug(`dialogflow response: ${JSON.stringify(_.omit(response, ['outputAudio']), null, 2)}`)
 
         const nlp = {
