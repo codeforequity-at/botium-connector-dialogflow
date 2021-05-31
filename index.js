@@ -235,7 +235,7 @@ class BotiumConnectorDialogflow {
         const attachments = audioAttachment ? [audioAttachment] : []
 
         const outputPlatform = this.caps[Capabilities.DIALOGFLOW_OUTPUT_PLATFORM]
-        const ffSrc = JSON.parse(JSON.stringify(response.queryResult.fulfillmentMessages))
+        const ffSrc = response.queryResult.fulfillmentMessages ? JSON.parse(JSON.stringify(response.queryResult.fulfillmentMessages)) : []
         let fulfillmentMessages = ffSrc.filter(f => {
           if (outputPlatform && f.platform === outputPlatform) {
             return true
