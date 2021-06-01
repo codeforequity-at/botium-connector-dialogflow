@@ -3,7 +3,8 @@
     "Capabilities": {
       "PROJECTNAME": "Google Dialogflow Techdemo",
       "CONTAINERMODE": "dialogflow",
-      "DIALOGFLOW_PROJECT_ID": "banking-1-uejcap"
+      "DIALOGFLOW_PROJECT_ID": "banking-1-uejcap",
+      "DIALOGFLOW_API_ENDPOINT": "global-dialogflow.googleapis.com"
     }
   }
 }
