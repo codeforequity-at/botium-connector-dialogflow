@@ -1,6 +1,6 @@
 {
   "name": "botium-connector-dialogflow",
-  "version": "0.0.29",
+  "version": "0.0.30",
   "description": "Botium Connector for Google Dialogflow",
   "main": "dist/botium-connector-dialogflow-cjs.js",
   "module": "dist/botium-connector-dialogflow-es.js",
@@ -50,7 +50,6 @@
     "lodash": "^4.17.15",
     "mime-types": "^2.1.27",
     "mkdirp": "^1.0.4",
-    "pb-util": "^1.0.0",
     "randomatic": "^3.1.1",
     "slug": "^2.1.1",
     "uuid": "^8.0.0",

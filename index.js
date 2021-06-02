@@ -3,9 +3,9 @@ const { v1: uuidV1 } = require('uuid')
 const mime = require('mime-types')
 const dialogflow = require('@google-cloud/dialogflow')
 const _ = require('lodash')
-const { struct } = require('pb-util')
 const debug = require('debug')('botium-connector-dialogflow')
 
+const { struct } = require('./structJson')
 const { importHandler, importArgs } = require('./src/dialogflowintents')
 const { exportHandler, exportArgs } = require('./src/dialogflowintents')
 const { extractIntentUtterances, trainIntentUtterances, cleanupIntentUtterances } = require('./src/nlp')
@@ -217,14 +217,17 @@ class BotiumConnectorDialogflow {
         this.queryParams.contexts = []
         const response = responses[0]
 
+        debug(`dialogflow response: ${JSON.stringify(_.omit(response, ['outputAudio']), null, 2)}`)
         if (response.queryResult.outputContexts) {
+          let decoded = false
           response.queryResult.outputContexts.forEach(context => {
             if (context.parameters) {
               context.parameters = struct.decode(context.parameters)
+              decoded = true
             }
           })
+          if (decoded) debug(`dialogflow response (after struct.decode): ${JSON.stringify(_.omit(response, ['outputAudio']), null, 2)}`)
         }
-        debug(`dialogflow response: ${JSON.stringify(_.omit(response, ['outputAudio']), null, 2)}`)
 
         const nlp = {
           intent: this._extractIntent(response),
