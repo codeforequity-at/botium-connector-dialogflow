@@ -11,6 +11,7 @@ JSON_PATH $.outputContexts[0].name|testsession
 JSON_PATH $.outputContexts[1].name|testbotium
 JSON_PATH $.outputContexts[2].name|mycontext1
 JSON_PATH $.outputContexts[3].name|mycontext2
+JSON_PATH $.outputContexts[?(@.name.indexOf('testbotium') >= 0)].parameters.IsBotiumTest|true
 
 #me
 book a room

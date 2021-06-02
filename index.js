@@ -3,13 +3,12 @@ const { v1: uuidV1 } = require('uuid')
 const mime = require('mime-types')
 const dialogflow = require('@google-cloud/dialogflow')
 const _ = require('lodash')
+const { struct } = require('pb-util')
 const debug = require('debug')('botium-connector-dialogflow')
 
 const { importHandler, importArgs } = require('./src/dialogflowintents')
 const { exportHandler, exportArgs } = require('./src/dialogflowintents')
 const { extractIntentUtterances, trainIntentUtterances, cleanupIntentUtterances } = require('./src/nlp')
-
-const structjson = require('./structjson')
 
 const Capabilities = {
   DIALOGFLOW_PROJECT_ID: 'DIALOGFLOW_PROJECT_ID',
@@ -149,7 +148,7 @@ class BotiumConnectorDialogflow {
         payload = JSON.parse(payload)
         request.queryInput.event = Object.assign({}, { languageCode: this.caps[Capabilities.DIALOGFLOW_LANGUAGE_CODE] }, payload)
         if (request.queryInput.event.parameters) {
-          request.queryInput.event.parameters = structjson.jsonToStructProto(request.queryInput.event.parameters)
+          request.queryInput.event.parameters = struct.encode(request.queryInput.event.parameters)
         }
       } catch (err) {
         request.queryInput.event = {
@@ -207,7 +206,7 @@ class BotiumConnectorDialogflow {
 
     request.queryParams = Object.assign({}, this.queryParams, mergeQueryParams)
     if (request.queryParams.payload) {
-      request.queryParams.payload = structjson.jsonToStructProto(request.queryParams.payload)
+      request.queryParams.payload = struct.encode(request.queryParams.payload)
     }
 
     debug(`dialogflow request: ${JSON.stringify(_.omit(request, ['inputAudio']), null, 2)}`)
@@ -220,9 +219,9 @@ class BotiumConnectorDialogflow {
 
         if (response.queryResult.outputContexts) {
           response.queryResult.outputContexts.forEach(context => {
-            context.parameters = structjson.jsonToStructProto(
-              structjson.structProtoToJson(context.parameters)
-            )
+            if (context.parameters) {
+              context.parameters = struct.decode(context.parameters)
+            }
           })
         }
         debug(`dialogflow response: ${JSON.stringify(_.omit(response, ['outputAudio']), null, 2)}`)
@@ -382,7 +381,7 @@ class BotiumConnectorDialogflow {
       name: contextPath,
       lifespanCount: parseInt(this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_LIFESPAN + contextSuffix]),
       parameters: this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_PARAMETERS + contextSuffix] &&
-        structjson.jsonToStructProto(this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_PARAMETERS + contextSuffix])
+        struct.encode(this.caps[Capabilities.DIALOGFLOW_INPUT_CONTEXT_PARAMETERS + contextSuffix])
     }
   }
 
@@ -428,7 +427,7 @@ class BotiumConnectorDialogflow {
       lifespanCount: contextLifespan
     }
     if (contextParameters) {
-      context.parameters = structjson.jsonToStructProto(contextParameters)
+      context.parameters = struct.encode(contextParameters)
     }
     return context
   }
