@@ -218,16 +218,19 @@ class BotiumConnectorDialogflow {
         const response = responses[0]
 
         debug(`dialogflow response: ${JSON.stringify(_.omit(response, ['outputAudio']), null, 2)}`)
+        let decoded = false
+        if (response.queryResult.parameters) {
+          response.queryResult.parameters = struct.decode(response.queryResult.parameters)
+        }
         if (response.queryResult.outputContexts) {
-          let decoded = false
           response.queryResult.outputContexts.forEach(context => {
             if (context.parameters) {
               context.parameters = struct.decode(context.parameters)
               decoded = true
             }
           })
-          if (decoded) debug(`dialogflow response (after struct.decode): ${JSON.stringify(_.omit(response, ['outputAudio']), null, 2)}`)
         }
+        if (decoded) debug(`dialogflow response (after struct.decode): ${JSON.stringify(_.omit(response, ['outputAudio']), null, 2)}`)
 
         const nlp = {
           intent: this._extractIntent(response),
@@ -447,8 +450,8 @@ class BotiumConnectorDialogflow {
   }
 
   _extractEntities (response) {
-    if (response.queryResult.parameters && response.queryResult.parameters.fields) {
-      return this._extractEntitiesFromFields('', response.queryResult.parameters.fields)
+    if (response.queryResult.parameters && Object.keys(response.queryResult.parameters).length > 0) {
+      return this._extractEntitiesFromFields('', response.queryResult.parameters)
     }
     return []
   }
@@ -460,29 +463,21 @@ class BotiumConnectorDialogflow {
   }
 
   _extractEntityValues (key, field) {
-    if (['numberValue', 'stringValue', 'boolValue', 'nullValue'].indexOf(field.kind) >= 0) {
-      const value = field[field.kind]
-      if (!_.isNil(value) && (!_.isString(value) || value.length)) {
-        return [{
-          name: key,
-          value: `${field[field.kind]}`
-        }]
-      }
+    if (_.isNull(field) || _.isUndefined(field)) {
       return []
+    } else if (_.isString(field) || _.isNumber(field) || _.isBoolean(field)) {
+      return [{
+        name: key,
+        value: field
+      }]
+    } else if (_.isArray(field)) {
+      return field.reduce((entities, lv, i) => {
+        return entities.concat(this._extractEntityValues(`${key}.${i}`, lv))
+      }, [])
+    } else if (_.isObject(field)) {
+      return this._extractEntitiesFromFields(key, field)
     }
-    if (field.kind === 'structValue') {
-      return this._extractEntitiesFromFields(key, field.structValue.fields)
-    }
-    if (field.kind === 'listValue') {
-      if (field.listValue.values && field.listValue.values.length > 0) {
-        return field.listValue.values.reduce((entities, lv, i) => {
-          return entities.concat(this._extractEntityValues(`${key}.${i}`, lv))
-        }, [])
-      } else {
-        return []
-      }
-    }
-    debug(`Unsupported entity kind ${field.kind}, skipping entity.`)
+    debug(`Unsupported entity kind for ${key}, skipping entity.`)
     return []
   }
 }

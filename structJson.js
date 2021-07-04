@@ -113,7 +113,7 @@ exports.struct = {
      * @returns {Object.<string, *>}
      */
     decode: function (_a) {
-        var fields = _a.fields;
+        var fields = _a.fields || {};
         var json = {};
         Object.keys(fields).forEach(function (key) {
             json[key] = exports.value.decode(fields[key]);
