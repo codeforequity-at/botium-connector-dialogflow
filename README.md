@@ -201,11 +201,11 @@ By setting this capability to _false_ this behaviour can be disabled and a butto
 You can use [Contexts](https://dialogflow.com/docs/contexts). They can be useful if you dont want to start the conversation from beginning,
 or you can set a context parameter “testmode” to make the web api behind the fulfillment react in a different way than in normal mode.
 
-If you are using more context parameters then you have to use more Capabilities. Use a name, or number as suffix to distinguish them. (Like DIALOGFLOW_INPUT_CONTEXT_NAME_EMAIL).  
+If you are using more context parameters then you have to use more Capabilities. Use a name, or number as suffix to distinguish them. (Like DIALOGFLOW_INPUT_CONTEXT_NAME_EMAIL).
 
 This Capability contains the name of the parameter.
 
-See also the [Sample botium.json](./samples/RoomReservation/botium-contexts.json)
+See also the [Sample botium.json](./samples/RoomReservation/botium.json)
 
 
 ### DIALOGFLOW_INPUT_CONTEXT_LIFESPAN(_X)
@@ -216,7 +216,7 @@ Mandatory Capability.
 
 ### DIALOGFLOW_INPUT_CONTEXT_PARAMETERS(_X)
 
-This Capability contains the values of the parameter. It is a JSON structure. See [Sample botium.json](./samples/RoomReservation/botium-contexts.json)
+This Capability contains the values of the parameter. It is a JSON structure. See [Sample botium.json](./samples/RoomReservation/botium.json)
 
 Optional Capability.
 
