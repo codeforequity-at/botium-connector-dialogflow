@@ -482,39 +482,6 @@ class BotiumConnectorDialogflow {
   }
 }
 
-const languagesList = [
-  'da',
-  'de',
-  'en',
-  'en-AU',
-  'en-CA',
-  'en-GB',
-  'en-IN',
-  'en-US',
-  'es',
-  'es-419',
-  'es-ES',
-  'fr',
-  'fr-CA',
-  'fr-FR',
-  'hi',
-  'id',
-  'it',
-  'ja',
-  'ko',
-  'nl',
-  'no',
-  'pt',
-  'pt-BR',
-  'ru',
-  'sv',
-  'th',
-  'uk',
-  'zh-CN',
-  'zh-HK',
-  'zh-TW'
-]
-
 const audioEncodingList = [
   'AUDIO_ENCODING_UNSPECIFIED',
   'AUDIO_ENCODING_LINEAR_16',
@@ -574,10 +541,32 @@ module.exports = {
         name: 'DIALOGFLOW_LANGUAGE_CODE',
         label: 'Language',
         description: 'For more information about supported languages, consult the <a href="https://cloud.google.com/dialogflow/es/docs/reference/language" target="_blank">Dialogflow Documentation</a>',
-        type: 'choice',
+        type: 'query',
         required: true,
         advanced: true,
-        choices: languagesList.map(l => ({ name: l, key: l }))
+        query: async (caps) => {
+          if (caps && caps.DIALOGFLOW_CLIENT_EMAIL && caps.DIALOGFLOW_PRIVATE_KEY && caps.DIALOGFLOW_PROJECT_ID) {
+            try {
+              const sessionOpts = {
+                credentials: {
+                  client_email: caps[Capabilities.DIALOGFLOW_CLIENT_EMAIL],
+                  private_key: caps[Capabilities.DIALOGFLOW_PRIVATE_KEY]
+                }
+              }
+              if (caps.DIALOGFLOW_API_ENDPOINT) {
+                sessionOpts.apiEndpoint = caps.DIALOGFLOW_API_ENDPOINT
+              }
+              const agentsClient = new dialogflow.v2beta1.AgentsClient(sessionOpts)
+              const projectPath = agentsClient.projectPath(caps.DIALOGFLOW_PROJECT_ID)
+              const allResponses = await agentsClient.getAgent({ parent: projectPath })
+              if (allResponses && allResponses.length > 0) {
+                return _.uniq([allResponses[0].defaultLanguageCode, ...allResponses[0].supportedLanguageCodes]).map(l => ({ name: l, key: l }))
+              }
+            } catch (err) {
+              throw new Error(`Dialogflow Agent Query failed: ${err.message}`)
+            }
+          }
+        }
       },
       {
         name: 'DIALOGFLOW_OUTPUT_PLATFORM',
@@ -596,7 +585,8 @@ module.exports = {
           { name: 'Line', key: 'LINE' },
           { name: 'Viber', key: 'VIBER' },
           { name: 'Google Assistant', key: 'ACTIONS_ON_GOOGLE' },
-          { name: 'Google Hangouts', key: 'GOOGLE_HANGOUTS' }
+          { name: 'Google Hangouts', key: 'GOOGLE_HANGOUTS' },
+          { name: 'Telephony', key: 'TELEPHONY' }
         ]
       },
       {
