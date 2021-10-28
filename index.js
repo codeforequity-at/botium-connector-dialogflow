@@ -16,6 +16,7 @@ const Capabilities = {
   DIALOGFLOW_CLIENT_EMAIL: 'DIALOGFLOW_CLIENT_EMAIL',
   DIALOGFLOW_PRIVATE_KEY: 'DIALOGFLOW_PRIVATE_KEY',
   DIALOGFLOW_LANGUAGE_CODE: 'DIALOGFLOW_LANGUAGE_CODE',
+  DIALOGFLOW_QUERY_PARAMS: 'DIALOGFLOW_QUERY_PARAMS',
   DIALOGFLOW_INPUT_CONTEXT_NAME: 'DIALOGFLOW_INPUT_CONTEXT_NAME',
   DIALOGFLOW_INPUT_CONTEXT_LIFESPAN: 'DIALOGFLOW_INPUT_CONTEXT_LIFESPAN',
   DIALOGFLOW_INPUT_CONTEXT_PARAMETERS: 'DIALOGFLOW_INPUT_CONTEXT_PARAMETERS',
@@ -88,6 +89,13 @@ class BotiumConnectorDialogflow {
     this.conversationId = uuidV1()
     this.queryParams = {}
 
+    if (this.caps[Capabilities.DIALOGFLOW_QUERY_PARAMS]) {
+      if (_.isString(this.caps[Capabilities.DIALOGFLOW_QUERY_PARAMS])) {
+        Object.assign(this.queryParams, JSON.parse(this.caps[Capabilities.DIALOGFLOW_QUERY_PARAMS]))
+      } else {
+        Object.assign(this.queryParams, this.caps[Capabilities.DIALOGFLOW_QUERY_PARAMS])
+      }
+    }
     if (_.isBoolean(this.caps[Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE]) && this.caps[Capabilities.DIALOGFLOW_ENABLE_KNOWLEDGEBASE]) {
       this.kbClient = new dialogflow.v2beta1.KnowledgeBasesClient(Object.assign({}, this.sessionOpts, {
         projectPath: this.caps[Capabilities.DIALOGFLOW_PROJECT_ID]

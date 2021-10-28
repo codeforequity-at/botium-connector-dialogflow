@@ -196,6 +196,12 @@ Botium simulates button clicks by using [Dialogflow "Events"](https://dialogflow
 
 By setting this capability to _false_ this behaviour can be disabled and a button click is sent as text input to Dialogflow.
 
+### DIALOGFLOW_QUERY_PARAMS
+
+Setting the initial [Dialogflow query parameters](https://cloud.google.com/dialogflow/docs/reference/rest/v2beta1/QueryParameters).
+
+Has to be a JSON-string or JSON-object.
+
 ### DIALOGFLOW_INPUT_CONTEXT_NAME(_X)
 
 You can use [Contexts](https://dialogflow.com/docs/contexts). They can be useful if you dont want to start the conversation from beginning,
@@ -206,7 +212,6 @@ If you are using more context parameters then you have to use more Capabilities.
 This Capability contains the name of the parameter.
 
 See also the [Sample botium.json](./samples/RoomReservation/botium.json)
-
 
 ### DIALOGFLOW_INPUT_CONTEXT_LIFESPAN(_X)
 
