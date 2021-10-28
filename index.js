@@ -43,7 +43,7 @@ class BotiumConnectorDialogflow {
     this.caps = caps
   }
 
-  Validate () {
+  async Validate () {
     debug('Validate called')
     this.caps = Object.assign({}, Defaults, this.caps)
 
@@ -61,10 +61,9 @@ class BotiumConnectorDialogflow {
         throw new Error(`DIALOGFLOW_INPUT_CONTEXT_NAME${contextSuffix} and DIALOGFLOW_INPUT_CONTEXT_LIFESPAN${contextSuffix} capability required`)
       }
     })
-    return Promise.resolve()
   }
 
-  Build () {
+  async Build () {
     debug('Build called')
 
     this.sessionOpts = {
@@ -81,8 +80,6 @@ class BotiumConnectorDialogflow {
     if (this.caps[Capabilities.DIALOGFLOW_API_ENDPOINT]) {
       this.sessionOpts.apiEndpoint = this.caps[Capabilities.DIALOGFLOW_API_ENDPOINT]
     }
-
-    return Promise.resolve()
   }
 
   async Start () {
@@ -127,10 +124,7 @@ class BotiumConnectorDialogflow {
 
     debug(`Using Dialogflow SessionPath: ${this.sessionPath}`)
     this.contextClient = new dialogflow.ContextsClient(this.sessionOpts)
-    this.queryParams = {
-      contexts: this._getContextSuffixes().map((c) => this._createInitialContext(c))
-    }
-    return Promise.resolve()
+    this.queryParams.contexts = this._getContextSuffixes().map((c) => this._createInitialContext(c))
   }
 
   UserSays (msg) {
@@ -339,18 +333,16 @@ class BotiumConnectorDialogflow {
       })
   }
 
-  Stop () {
+  async Stop () {
     debug('Stop called')
     this.sessionClient = null
     this.sessionPath = null
     this.queryParams = null
-    return Promise.resolve()
   }
 
-  Clean () {
+  async Clean () {
     debug('Clean called')
     this.sessionOpts = null
-    return Promise.resolve()
   }
 
   _getAudioOutput (response) {
