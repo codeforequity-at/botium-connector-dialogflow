@@ -52,7 +52,7 @@ _Already integrated into Botium Box, no setup required_
 
 ## Connecting Dialogflow Agent to Botium
 
-Open the file _botium.json_ in your working directory and add the Google credentials for accessing your Dialogflow agent. [This article](https://chatbotsmagazine.com/3-steps-setup-automated-testing-for-google-assistant-and-dialogflow-de42937e57c6) shows how to retrieve all those settings.
+Open the file _botium.json_ in your working directory and add the Google credentials for accessing your Dialogflow agent. [This article](https://wiki.botiumbox.com/technical-reference/botium-connectors/supported-technologies/botium-connector-dialogflow/) shows how to retrieve all those settings.
 
 ```
 {
