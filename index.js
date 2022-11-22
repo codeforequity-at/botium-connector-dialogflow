@@ -598,6 +598,41 @@ module.exports = {
         advanced: true,
         choices: audioEncodingList.map(l => ({ name: l, key: l }))
       }
+    ],
+    actions: [
+      {
+        name: 'GetAgentMetaData',
+        description: 'GetAgentMetaData',
+        run: async (caps) => {
+          if (caps && caps.DIALOGFLOW_CLIENT_EMAIL && caps.DIALOGFLOW_PRIVATE_KEY && caps.DIALOGFLOW_PROJECT_ID) {
+            try {
+              const sessionOpts = {
+                credentials: {
+                  client_email: caps[Capabilities.DIALOGFLOW_CLIENT_EMAIL],
+                  private_key: caps[Capabilities.DIALOGFLOW_PRIVATE_KEY]
+                }
+              }
+              if (caps.DIALOGFLOW_API_ENDPOINT) {
+                sessionOpts.apiEndpoint = caps.DIALOGFLOW_API_ENDPOINT
+              }
+              const agentsClient = new dialogflow.v2beta1.AgentsClient(sessionOpts)
+              const projectPath = agentsClient.projectPath(caps.DIALOGFLOW_PROJECT_ID)
+
+              const agentResponses = await agentsClient.getAgent({ parent: projectPath })
+              const agentInfo = agentResponses[0]
+
+              return {
+                name: agentInfo.displayName,
+                description: agentInfo.description,
+                metadata: agentInfo
+              }
+            } catch (err) {
+              throw new Error(`Dialogflow Agent Query failed: ${err.message}`)
+            }
+          }
+        }
+      }
     ]
+
   }
 }
