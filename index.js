@@ -633,6 +633,5 @@ module.exports = {
         }
       }
     ]
-
   }
 }
