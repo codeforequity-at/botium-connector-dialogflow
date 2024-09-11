@@ -2,7 +2,6 @@
 
 [![NPM](https://nodei.co/npm/botium-connector-dialogflow.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/botium-connector-dialogflow/)
 
-[ ![Codeship Status for codeforequity-at/botium-connector-dialogflow](https://app.codeship.com/projects/1c935480-633f-0136-f02a-52b5f01093c8/status?branch=master)](https://app.codeship.com/projects/296958)
 [![npm version](https://badge.fury.io/js/botium-connector-dialogflow.svg)](https://badge.fury.io/js/botium-connector-dialogflow)
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)]()
 
