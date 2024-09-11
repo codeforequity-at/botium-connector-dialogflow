@@ -13,7 +13,8 @@
   "scripts": {
     "build": "npm run eslint && rollup -c",
     "eslint": "eslint index.js src/**.js bin/**.js",
-    "eslint-fix": "eslint --fix index.js src/**.js bin/**.js"
+    "eslint-fix": "eslint --fix index.js src/**.js bin/**.js",
+    "test": "echo \"Placeholder\""
   },
   "repository": {
     "type": "git",
